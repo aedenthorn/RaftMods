@@ -9,9 +9,9 @@ using UnityEngine;
 using System.Linq;
 using System.Reflection.Emit;
 
-namespace CancelRope
+namespace CancelHook
 {
-    [BepInPlugin("aedenthorn.CancelRope", "Cancel Rope", "0.1.0")]
+    [BepInPlugin("aedenthorn.CancelHook", "Cancel Hook", "0.2.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         private static BepInExPlugin context;

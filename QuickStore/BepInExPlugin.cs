@@ -19,6 +19,7 @@ namespace QuickStore
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
         public static ConfigEntry<string> hotkey;
+        public static ConfigEntry<string> disallowedItems;
         public static ConfigEntry<float> range;
 
         public static void Dbgl(string str = "", bool pref = true)
@@ -31,8 +32,9 @@ namespace QuickStore
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
-			hotkey = Config.Bind<string>("General", "Hotkey", "k", "Hotkey to trigger quick store");
-			range = Config.Bind<float>("General", "Range", 10, "Range in metres from storage to allow quick store (-1 is infinite range)");
+			hotkey = Config.Bind<string>("Options", "Hotkey", "k", "Hotkey to trigger quick store");
+			range = Config.Bind<float>("Options", "Range", 10, "Range in metres from storage to allow quick store (-1 is infinite range)");
+			disallowedItems = Config.Bind<string>("Options", "DisallowedItems", "", "List of items that will not be moved (comma-separated)");
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
         }
@@ -42,10 +44,11 @@ namespace QuickStore
             if (AedenthornUtils.CheckKeyDown(hotkey.Value))
             {
                 Dbgl("Quick store");
+                var disallowedList = disallowedItems.Value.Split(',').ToList();
                 var pi = ComponentManager<PlayerInventory>.Value;
                 foreach (var slot in pi.allSlots)
                 {
-                    if (slot.itemInstance is null)
+                    if (slot.itemInstance is null || disallowedList.Contains(slot.itemInstance.UniqueName))
                         continue;
                     string slotName = slot.itemInstance.UniqueName;
                     int originalAmount = slot.itemInstance.Amount;

@@ -3,15 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32519.379
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CancelRope", "CancelRope\CancelRope.csproj", "{36261601-0785-4E7B-966F-87E9917F7EB2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StackingSails", "StackingSails\StackingSails.csproj", "{7EE0A254-9453-4589-B008-958321CDF750}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StackingSails", "StackingSails\StackingSails.csproj", "{7EE0A254-9453-4589-B008-958321CDF750}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Durability", "Durability\Durability.csproj", "{B903B621-646F-4C61-BDA7-81A5DD24F746}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Durability", "Durability\Durability.csproj", "{B903B621-646F-4C61-BDA7-81A5DD24F746}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpawnSettings", "SpawnSettings\SpawnSettings.csproj", "{DF30C723-9836-4628-A0C6-D77633760954}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StorageSize", "StorageSize\StorageSize.csproj", "{768AD0CB-1EB5-4F56-AE12-7E33B6C5D1A2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StorageSize", "StorageSize\StorageSize.csproj", "{768AD0CB-1EB5-4F56-AE12-7E33B6C5D1A2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharkTweak", "SharkTweak\SharkTweak.csproj", "{07B94731-C5A9-4767-9BC3-19AD9FA1C836}"
 EndProject
@@ -29,16 +27,18 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuickStore", "QuickStore\Qu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AedenthornUtils", "AedenthornUtils\AedenthornUtils.csproj", "{4DE8AF05-021F-4DC7-84B9-DEF2659F1260}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CancelHook", "CancelHook\CancelHook.csproj", "{942F85BF-5241-4372-A0DA-F0897196F51A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutoFuel", "AutoFuel\AutoFuel.csproj", "{A9328EA2-C979-4A9B-B428-9D93E1B6F612}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EngineTweaks", "EngineTweaks\EngineTweaks.csproj", "{5803A187-557E-4133-916F-D3F24D0D764D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{36261601-0785-4E7B-966F-87E9917F7EB2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{36261601-0785-4E7B-966F-87E9917F7EB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{36261601-0785-4E7B-966F-87E9917F7EB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{36261601-0785-4E7B-966F-87E9917F7EB2}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7EE0A254-9453-4589-B008-958321CDF750}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7EE0A254-9453-4589-B008-958321CDF750}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7EE0A254-9453-4589-B008-958321CDF750}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -87,6 +87,18 @@ Global
 		{4DE8AF05-021F-4DC7-84B9-DEF2659F1260}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4DE8AF05-021F-4DC7-84B9-DEF2659F1260}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4DE8AF05-021F-4DC7-84B9-DEF2659F1260}.Release|Any CPU.Build.0 = Release|Any CPU
+		{942F85BF-5241-4372-A0DA-F0897196F51A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{942F85BF-5241-4372-A0DA-F0897196F51A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{942F85BF-5241-4372-A0DA-F0897196F51A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{942F85BF-5241-4372-A0DA-F0897196F51A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9328EA2-C979-4A9B-B428-9D93E1B6F612}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9328EA2-C979-4A9B-B428-9D93E1B6F612}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9328EA2-C979-4A9B-B428-9D93E1B6F612}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9328EA2-C979-4A9B-B428-9D93E1B6F612}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5803A187-557E-4133-916F-D3F24D0D764D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5803A187-557E-4133-916F-D3F24D0D764D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5803A187-557E-4133-916F-D3F24D0D764D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5803A187-557E-4133-916F-D3F24D0D764D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
