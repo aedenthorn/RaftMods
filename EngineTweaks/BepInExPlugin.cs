@@ -30,7 +30,7 @@ namespace EngineTweaks
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
-            foundationMult = Config.Bind<float>("Options", "FoundationMult", 10, "Multiply foundation pieces per engine by this amount");
+            foundationMult = Config.Bind<float>("Options", "FoundationMult", 1, "Multiply foundation pieces per engine by this amount");
             toggleAllKey = Config.Bind<string>("Options", "ToggleAllKey", "left shift", "Hold this key down when toggling power on one engine to toggle on all.");
             toggleText = Config.Bind<string>("Options", "ToggleText", "Toggle", "Text to show on steering wheel to toggle");
 			useToggleOnSteeringWheel = Config.Bind<bool>("Options", "UseToggleOnSteeringWheel", true, "Allow using the toggle key on the steering wheel");
