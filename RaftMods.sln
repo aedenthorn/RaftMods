@@ -33,6 +33,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutoFuel", "AutoFuel\AutoFu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EngineTweaks", "EngineTweaks\EngineTweaks.csproj", "{5803A187-557E-4133-916F-D3F24D0D764D}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CreatureTweaks", "CreatureTweaks\CreatureTweaks.csproj", "{AD458C27-737F-45DC-A9F0-16031A61C175}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -99,6 +101,10 @@ Global
 		{5803A187-557E-4133-916F-D3F24D0D764D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5803A187-557E-4133-916F-D3F24D0D764D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5803A187-557E-4133-916F-D3F24D0D764D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD458C27-737F-45DC-A9F0-16031A61C175}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD458C27-737F-45DC-A9F0-16031A61C175}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD458C27-737F-45DC-A9F0-16031A61C175}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD458C27-737F-45DC-A9F0-16031A61C175}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

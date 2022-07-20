@@ -12,7 +12,7 @@ using System;
 
 namespace CraftFromContainers
 {
-    [BepInPlugin("aedenthorn.CraftFromContainers", "Craft From Containers", "0.2.0")]
+    [BepInPlugin("aedenthorn.CraftFromContainers", "Craft From Containers", "0.2.1")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         private static BepInExPlugin context;
@@ -75,6 +75,22 @@ namespace CraftFromContainers
                 creatingBlock = false;
             }
         }
+		[HarmonyPatch(typeof(BuildingUI_Costbox_Sub_Crafting), nameof(BuildingUI_Costbox_Sub_Crafting.OnQuickCraft))]
+		static class BuildingUI_Costbox_Sub_Crafting_OnQuickCraft_Patch
+        {
+            public static void Prefix()
+            {
+                if (!modEnabled.Value)
+                    return;
+                creatingBlock = true;
+            }
+            public static void Postfix()
+            {
+                if (!modEnabled.Value)
+                    return;
+                creatingBlock = false;
+            }
+        }
 		[HarmonyPatch(typeof(Inventory), nameof(Inventory.RemoveCostMultiple))]
 		static class Inventory_RemoveCostMultiple_Patch
         {
@@ -82,6 +98,7 @@ namespace CraftFromContainers
             {
                 if (!modEnabled.Value || !creatingBlock)
                     return true;
+                Dbgl("Removing cost multiple");
                 creatingBlock = false;
                 CostMultiple[] array = new CostMultiple[costMultiple.Length];
                 for (int i = 0; i < costMultiple.Length; i++)
