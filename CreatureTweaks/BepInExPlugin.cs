@@ -10,8 +10,8 @@ using UnityEngine;
 
 namespace CreatureTweaks
 {
-    [BepInPlugin("aedenthorn.CreatureTweaks", "Creature Tweaks", "0.2.0")]
-    public class BepInExPlugin: BaseUnityPlugin
+    [BepInPlugin("aedenthorn.CreatureTweaks", "Creature Tweaks", "0.2.1")]
+    public class BepInExPlugin : BaseUnityPlugin
     {
         private static BepInExPlugin context;
 
@@ -24,7 +24,7 @@ namespace CreatureTweaks
         public static ConfigEntry<bool> bearNeverAttackPlayer;
         public static ConfigEntry<bool> boarNeverAttackPlayer;
         public static ConfigEntry<bool> pufferFishNeverExplode;
-        
+
         public static ConfigEntry<float> sharkBitePlayerIntervalMult;
         public static ConfigEntry<float> sharkBiteBlockIntervalMult;
 
@@ -32,12 +32,12 @@ namespace CreatureTweaks
         {
             if (isDebug.Value)
                 Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
-        } 
+        }
         private void Awake()
         {
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
-			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
+            isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
             animalsNeverAttackPlayer = Config.Bind<bool>("Options", "AnimalsNeverAttackPlayer", true, "Prevent various animals from attacking players");
             birdsNeverDropStones = Config.Bind<bool>("Options", "BirdsNeverDropStones", true, "Prevent birds from dropping stones on players");
             bearNeverAttackPlayer = Config.Bind<bool>("Options", "BearNeverAttackPlayer", true, "Prevent bears attacking players");
@@ -49,14 +49,6 @@ namespace CreatureTweaks
             sharkBiteBlockIntervalMult = Config.Bind<float>("Options", "SharkBiteBlockIntervalMult", 1, "Multiplier for delay between biting blocks");
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
-        }
-        [HarmonyPatch(typeof(AI_StateMachine_Shark), nameof(AI_StateMachine_Shark.FindAndSetTargetToAttack))]
-        static class AI_StateMachine_Shark_FindAndSetTargetToAttack_Patch
-        {
-            static bool Prefix(AI_State_Attack_Entity_Shark __instance)
-            {
-                return !modEnabled.Value || !sharkNeverBitePlayer.Value;
-            }
         }
         [HarmonyPatch(typeof(AI_State_Attack_Entity_Shark), nameof(AI_State_Attack_Entity_Shark.UpdateState))]
         static class AI_State_Attack_Entity_Shark_UpdateState_Patch
@@ -78,6 +70,14 @@ namespace CreatureTweaks
             }
         }
 
+        [HarmonyPatch(typeof(Helper), nameof(Helper.ClosestPlayerInWaterToPoint))]
+        static class Helper_ClosestPlayerInWaterToPoint_UpdateState_Patch
+        {
+            static bool Prefix()
+            {
+                return (!modEnabled.Value || !sharkNeverBitePlayer.Value || !Environment.StackTrace.Contains("Shark"));
+            }
+        }
         private static float GetDrivebyTimerIncrement(float time)
         {
             if (!modEnabled.Value)
