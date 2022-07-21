@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace CreatureTweaks
 {
-    [BepInPlugin("aedenthorn.CreatureTweaks", "Creature Tweaks", "0.1.0")]
+    [BepInPlugin("aedenthorn.CreatureTweaks", "Creature Tweaks", "0.2.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         private static BepInExPlugin context;
@@ -24,6 +24,9 @@ namespace CreatureTweaks
         public static ConfigEntry<bool> bearNeverAttackPlayer;
         public static ConfigEntry<bool> boarNeverAttackPlayer;
         public static ConfigEntry<bool> pufferFishNeverExplode;
+        
+        public static ConfigEntry<float> sharkBitePlayerIntervalMult;
+        public static ConfigEntry<float> sharkBiteBlockIntervalMult;
 
         public static void Dbgl(string str = "", bool pref = true)
         {
@@ -41,35 +44,73 @@ namespace CreatureTweaks
             boarNeverAttackPlayer = Config.Bind<bool>("Options", "BoarNeverAttackPlayer", true, "Prevent boars attacking players");
             pufferFishNeverExplode = Config.Bind<bool>("Options", "PufferFishNeverExplode", true, "Prevent pufferfish from exploding");
             sharkNeverBitePlayer = Config.Bind<bool>("Options", "SharkNeverBitePlayer", true, "Prevent sharks biting players");
+            sharkBitePlayerIntervalMult = Config.Bind<float>("Options", "SharkBitePlayerIntervalMult", 1, "Multiplier for delay between biting players");
             sharkNeverBiteBlocks = Config.Bind<bool>("Options", "SharkNeverBiteBlocks", true, "Prevent sharks biting blocks");
+            sharkBiteBlockIntervalMult = Config.Bind<float>("Options", "SharkBiteBlockIntervalMult", 1, "Multiplier for delay between biting blocks");
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
         }
-        [HarmonyPatch(typeof(AI_State_Attack_Entity_Shark), nameof(AI_State_Attack_Entity_Shark.AttemptAttack))]
-        static class AI_State_Attack_Entity_Shark_AttemptAttack_Patch
+        [HarmonyPatch(typeof(AI_StateMachine_Shark), nameof(AI_StateMachine_Shark.FindAndSetTargetToAttack))]
+        static class AI_StateMachine_Shark_FindAndSetTargetToAttack_Patch
         {
-            static bool Prefix(AI_State_Attack_Entity_Shark __instance, bool ___damageTreshHoldReached)
+            static bool Prefix(AI_State_Attack_Entity_Shark __instance)
             {
-                if (!modEnabled.Value || !sharkNeverBitePlayer.Value)
-                    return true;
-
-                Network_Player network_Player = Helper.ClosestPlayerInWaterToPoint(__instance.stateMachine.transform.position, __instance.stateMachineShark.playerVisionRange, false);
-                if (network_Player == null)
-                {
-                    return false;
-                }
-                if (!Raft_Network.IsHost)
-                {
-                    return false;
-                }
-                if (___damageTreshHoldReached)
-                {
-                    return false;
-                }
-                __instance.ForceDriveBy(true);
-                return false;
+                return !modEnabled.Value || !sharkNeverBitePlayer.Value;
             }
         }
+        [HarmonyPatch(typeof(AI_State_Attack_Entity_Shark), nameof(AI_State_Attack_Entity_Shark.UpdateState))]
+        static class AI_State_Attack_Entity_Shark_UpdateState_Patch
+        {
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                Dbgl($"Transpiling AI_State_Attack_Entity_Shark.UpdateState");
+                var codes = new List<CodeInstruction>(instructions);
+                for (int i = 0; i < codes.Count; i++)
+                {
+                    if (codes[i].opcode == OpCodes.Ldfld && (FieldInfo)codes[i].operand == AccessTools.Field(typeof(AI_State_Attack_Entity_Shark), "driveByTimer") && codes[i + 1].opcode == OpCodes.Call && (MethodInfo)codes[i + 1].operand == AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime)) && codes[i + 2].opcode == OpCodes.Add)
+                    {
+                        Dbgl("adding method to affect driveby timer");
+                        codes.Insert(i + 2, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetDrivebyTimerIncrement))));
+                    }
+                }
+
+                return codes.AsEnumerable();
+            }
+        }
+
+        private static float GetDrivebyTimerIncrement(float time)
+        {
+            if (!modEnabled.Value)
+                return time;
+            return time / sharkBitePlayerIntervalMult.Value;
+        }
+        [HarmonyPatch(typeof(AI_StateMachine_Shark), "UpdateStateMachine")]
+        static class AI_StateMachine_Shark_UpdateStateMachine_Patch
+        {
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                Dbgl($"Transpiling AI_StateMachine_Shark.UpdateStateMachine");
+                var codes = new List<CodeInstruction>(instructions);
+                for (int i = 0; i < codes.Count; i++)
+                {
+                    if (codes[i].opcode == OpCodes.Ldfld && (FieldInfo)codes[i].operand == AccessTools.Field(typeof(AI_StateMachine_Shark), "searchBlockProgress") && codes[i + 1].opcode == OpCodes.Call && (MethodInfo)codes[i + 1].operand == AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime)) && codes[i + 2].opcode == OpCodes.Add)
+                    {
+                        Dbgl("adding method to affect block search timer");
+                        codes.Insert(i + 2, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetBlockSearchTimerIncrement))));
+                    }
+                }
+
+                return codes.AsEnumerable();
+            }
+        }
+
+        private static float GetBlockSearchTimerIncrement(float time)
+        {
+            if (!modEnabled.Value)
+                return time;
+            return time / sharkBiteBlockIntervalMult.Value;
+        }
+
         [HarmonyPatch(typeof(AI_State_Attack_Block_Shark), "FindBlockToAttack")]
         static class AI_State_Attack_Block_Patch
         {
