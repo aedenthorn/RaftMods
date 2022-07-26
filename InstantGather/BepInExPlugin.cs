@@ -9,13 +9,14 @@ using UnityEngine;
 
 namespace InstantGather
 {
-    [BepInPlugin("aedenthorn.InstantGather", "Instant Gather", "0.1.0")]
+    [BepInPlugin("aedenthorn.InstantGather", "Instant Gather", "0.2.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         private static BepInExPlugin context;
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
+        public static ConfigEntry<float> gatherTime;
 
         public static void Dbgl(string str = "", bool pref = true)
         {
@@ -27,6 +28,7 @@ namespace InstantGather
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
+			gatherTime = Config.Bind<float>("Options", "GatherTime", 0.0001f, "Gather time");
 
             if (!modEnabled.Value)
                 return;
@@ -41,7 +43,7 @@ namespace InstantGather
 			{
 				if (!modEnabled.Value)
 					return;
-                ___gatherTime = 0.0001f;
+                ___gatherTime = gatherTime.Value;
             }
         }
     }
