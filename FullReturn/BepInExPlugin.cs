@@ -58,8 +58,8 @@ namespace FullReturn
                     if (codes[i].opcode == OpCodes.Ldc_R4 && (float)codes[i].operand == 0.5f)
                     {
                         Dbgl("replacing 0.5 with method");
-                        codes[i].opcode = OpCodes.Call;
-                        codes[i].operand = AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetPortion));
+                        codes.Insert(i+1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetPortion))));
+                        break;
                     }
                 }
 
@@ -67,8 +67,10 @@ namespace FullReturn
             }
         }
 
-        private static float GetPortion()
+        private static float GetPortion(float value)
         {
+            if (!modEnabled.Value)
+                return value;
             return returnPercent.Value;
         }
     }

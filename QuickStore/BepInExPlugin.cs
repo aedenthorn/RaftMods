@@ -8,6 +8,7 @@ using UltimateWater;
 using UnityEngine;
 using System.Linq;
 using System.Reflection.Emit;
+using System.Collections;
 
 namespace QuickStore
 {
@@ -18,6 +19,8 @@ namespace QuickStore
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
+        public static ConfigEntry<bool> storeFromHotbar;
+        public static ConfigEntry<bool> storeFromNets;
         public static ConfigEntry<string> hotkey;
         public static ConfigEntry<string> disallowedItems;
         public static ConfigEntry<float> range;
@@ -27,32 +30,33 @@ namespace QuickStore
             if (isDebug.Value)
                 Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
         } 
-        private void Awake()
+        public void Awake()
         {
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
+            storeFromHotbar = Config.Bind<bool>("Options", "StoreFromHotbar", false, "Store items from the hotbar");
+            storeFromNets = Config.Bind<bool>("Options", "StoreFromNets", true, "Store items caught in net blocks");
 			hotkey = Config.Bind<string>("Options", "Hotkey", "k", "Hotkey to trigger quick store");
 			range = Config.Bind<float>("Options", "Range", 10, "Range in metres from storage to allow quick store (-1 is infinite range)");
 			disallowedItems = Config.Bind<string>("Options", "DisallowedItems", "", "List of items that will not be moved (comma-separated)");
 
-            Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
+            //Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
         }
-
-        private void Update()
+        public static bool running = false;
+        public void Update()
         {
-            if (AedenthornUtils.CheckKeyDown(hotkey.Value))
+            if (!running && AedenthornUtils.CheckKeyDown(hotkey.Value))
             {
                 Dbgl("Quick store");
                 var disallowedList = disallowedItems.Value.Split(',').ToList();
                 var pi = ComponentManager<PlayerInventory>.Value;
                 foreach (var slot in pi.allSlots)
                 {
-                    if (slot.itemInstance is null || disallowedList.Contains(slot.itemInstance.UniqueName))
+                    if (slot.itemInstance is null || disallowedList.Contains(slot.itemInstance.UniqueName) || (!storeFromHotbar.Value && pi.hotbar.ContainsSlot(slot)))
                         continue;
                     string slotName = slot.itemInstance.UniqueName;
                     int originalAmount = slot.itemInstance.Amount;
-
                     foreach (Storage_Small s in StorageManager.allStorages)
                     {
                         if (range.Value >= 0 && Vector3.Distance(ComponentManager<Raft_Network>.Value.GetLocalPlayer().transform.position, s.transform.position) > range.Value)
@@ -75,7 +79,7 @@ namespace QuickStore
                             }
                         }
                     }
-                    if(slot.itemInstance is null || slot.itemInstance.Amount < originalAmount)
+                    if (slot.itemInstance is null || slot.itemInstance.Amount < originalAmount)
                     {
                         int remaining = (slot.itemInstance is null) ? 0 : slot.itemInstance.Amount;
                         Dbgl($"Stored {originalAmount - remaining} {slotName}");
@@ -87,9 +91,9 @@ namespace QuickStore
                         if (firstItem == null || itemByName == null)
                         {
                             Dbgl($"firstItem {firstItem != null}, itemByName {itemByName != null}");
-                            return;
+                            break;
                         }
-                        foreach (InventoryPickupMenuItem inventoryPickupMenuItem in AccessTools.FieldRefAccess<InventoryPickup,List<InventoryPickupMenuItem>>(ip, "items"))
+                        foreach (InventoryPickupMenuItem inventoryPickupMenuItem in AccessTools.FieldRefAccess<InventoryPickup, List<InventoryPickupMenuItem>>(ip, "items"))
                         {
                             if (inventoryPickupMenuItem.gameObject.activeInHierarchy)
                             {
@@ -105,6 +109,58 @@ namespace QuickStore
                         AccessTools.FieldRefAccess<InventoryPickupMenuItem, bool>(firstItem, "fade") = false;
                         firstItem.Invoke("StartFade", 3.5f);
                         firstItem.index = 0;
+                    }
+
+                }
+                if (storeFromNets.Value)
+                {
+                    var ics = FindObjectsOfType<ItemCollector>();
+                    foreach (var ic in ics)
+                    {
+                        for (int k = ic.collectedItems.Count - 1; k >= 0; k--)
+                        {
+                            PickupItem_Networked pin = ic.collectedItems[k];
+                            if (pin?.PickupItem?.yieldHandler == null || pin.PickupItem.yieldHandler.Yield.Count == 0)
+                                continue;
+                            for (int i = pin.PickupItem.yieldHandler.Yield.Count - 1; i >= 0; i--)
+                            {
+                                foreach (Storage_Small s in StorageManager.allStorages)
+                                {
+                                    if (range.Value >= 0 && Vector3.Distance(ic.transform.position, s.transform.position) > range.Value)
+                                        continue;
+                                    if (s.GetInventoryReference().GetItemCount(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName) > 0)
+                                    {
+                                        int remain = s.GetInventoryReference().AddItem(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName, pin.PickupItem.yieldHandler.Yield[i].amount);
+                                        Dbgl($"Got match for {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{pin.PickupItem.yieldHandler.Yield[i].amount} in storage, remaining {remain}");
+                                        if (remain == 0)
+                                        {
+                                            Collider[] componentsInChildren = pin.GetComponentsInChildren<Collider>();
+                                            if (componentsInChildren != null)
+                                            {
+                                                foreach (Collider collider in componentsInChildren)
+                                                {
+                                                    if (!(collider == null))
+                                                    {
+                                                        collider.enabled = true;
+                                                    }
+                                                }
+                                            }
+                                            WaterFloatSemih2 component = pin.GetComponent<WaterFloatSemih2>();
+                                            if (component != null)
+                                            {
+                                                component.enabled = true;
+                                            }
+                                            PickupObjectManager.RemovePickupItem(pin);
+
+                                            ic.collectedItems.RemoveAt(k);
+                                            goto next;
+                                        }
+                                    }
+                                }
+                            }
+                        next:
+                            continue;
+                        }
                     }
                 }
             }

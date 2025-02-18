@@ -22,8 +22,8 @@ namespace ShowRaftCenter
         {
             if (isDebug.Value)
                 Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
-        } 
-        private void Awake()
+        }
+        public void Awake()
         {
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
@@ -34,7 +34,7 @@ namespace ShowRaftCenter
             colorTwo = Config.Bind<Color>("Options", "ColorTwo", new Color(0.75f, 0.75f, 0.75f, 1), "Color Two");
 
         }
-        private void Update()
+        public void Update()
         {
             if (AedenthornUtils.CheckKeyDown(showKey.Value))
             {

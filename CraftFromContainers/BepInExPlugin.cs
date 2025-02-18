@@ -7,10 +7,11 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
+using static SO_TradingPost_Buyable;
 
 namespace CraftFromContainers
 {
-    [BepInPlugin("aedenthorn.CraftFromContainers", "Craft From Containers", "0.2.1")]
+    [BepInPlugin("aedenthorn.CraftFromContainers", "Craft From Containers", "0.3.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         private static BepInExPlugin context;
@@ -25,13 +26,58 @@ namespace CraftFromContainers
             if (isDebug.Value)
                 Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
         } 
-        private void Awake()
+        public void Awake()
         {
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
+			range = Config.Bind<float>("General", "Range", -1, "Range in meters; set to negative for no range limit.");
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
+        }
+
+        public static List<Storage_Small> GetStorages()
+        {
+            List<Storage_Small> list = new List<Storage_Small>();
+            foreach (Storage_Small s in StorageManager.allStorages)
+            {
+                if (range.Value >= 0 && Vector3.Distance(ComponentManager<Raft_Network>.Value.GetLocalPlayer().transform.position, s.transform.position) > range.Value)
+                    continue;
+                list.Add(s);
+            }
+            return list;
+        }
+        
+        public static int GetAmount(Inventory inventory, List<Item_Base> ___items)
+        {
+            int num = 0;
+            for (int i = 0; i < ___items.Count; i++)
+            {
+                if (___items[i] != null)
+                {
+                    num += inventory.GetItemCount(___items[i].UniqueName);
+                    foreach (Storage_Small s in GetStorages())
+                    {
+                        num += s.GetInventoryReference().GetItemCount(___items[i].UniqueName);
+                    }
+                }
+            }
+            return num; 
+        }
+        
+        
+        public static void RemoveCostMultiple(Inventory __instance, CostMultiple[] costMultiple)
+        {
+            CostMultiple[] array = new CostMultiple[costMultiple.Length];
+            for (int i = 0; i < costMultiple.Length; i++)
+            {
+                array[i] = new CostMultiple(costMultiple[i].items, costMultiple[i].amount);
+            }
+            __instance.RemoveCostMultiple(array, true);
+            foreach (Storage_Small s in GetStorages())
+            {
+                s.GetInventoryReference().RemoveCostMultiple(array, true);
+            }
         }
 
 		[HarmonyPatch(typeof(BuildingUI_CostBox), nameof(BuildingUI_CostBox.SetAmountInInventory))]
@@ -41,18 +87,7 @@ namespace CraftFromContainers
             {
                 if (!modEnabled.Value || GameModeValueManager.GetCurrentGameModeValue().playerSpecificVariables.unlimitedResources)
                     return true;
-                int num = 0;
-                for (int i = 0; i < ___items.Count; i++)
-                {
-                    if (___items[i] != null)
-                    {
-                        num += inventory.GetItemCount(___items[i].UniqueName);
-                        foreach(Storage_Small s in StorageManager.allStorages)
-                        {
-                            num += s.GetInventoryReference().GetItemCount(___items[i].UniqueName);
-                        }
-                    }
-                }
+                int num = GetAmount(inventory, ___items);
                 __instance.SetAmount(num);
                 return false;
             }
@@ -98,16 +133,7 @@ namespace CraftFromContainers
                     return true;
                 Dbgl("Removing cost multiple");
                 creatingBlock = false;
-                CostMultiple[] array = new CostMultiple[costMultiple.Length];
-                for (int i = 0; i < costMultiple.Length; i++)
-                {
-                    array[i] = new CostMultiple(costMultiple[i].items, costMultiple[i].amount);
-                }
-                __instance.RemoveCostMultiple(array, true);
-                foreach (Storage_Small s in StorageManager.allStorages)
-                {
-                    s.GetInventoryReference().RemoveCostMultiple(array, true);
-                }
+                RemoveCostMultiple(__instance, costMultiple);
                 return false;
             }
         }
@@ -118,16 +144,7 @@ namespace CraftFromContainers
             {
                 if (!modEnabled.Value || GameModeValueManager.GetCurrentGameModeValue().playerSpecificVariables.unlimitedResources)
                     return true;
-                CostMultiple[] array = new CostMultiple[costMultiple.Length];
-                for (int i = 0; i < costMultiple.Length; i++)
-                {
-                    array[i] = new CostMultiple(costMultiple[i].items, costMultiple[i].amount);
-                }
-                __instance.RemoveCostMultiple(array, true);
-                foreach (Storage_Small s in StorageManager.allStorages)
-                {
-                    s.GetInventoryReference().RemoveCostMultiple(array, true);
-                }
+                RemoveCostMultiple(__instance, costMultiple);
                 return false;
             }
         }
@@ -138,18 +155,7 @@ namespace CraftFromContainers
             {
                 if (!modEnabled.Value)
                     return true;
-                int num = 0;
-                for (int i = 0; i < __instance.items.Length; i++)
-                {
-                    if (__instance.items[i] != null)
-                    {
-                        num += inventory.GetItemCount(__instance.items[i].UniqueName);
-                        foreach (Storage_Small s in StorageManager.allStorages)
-                        {
-                            num += s.GetInventoryReference().GetItemCount(__instance.items[i].UniqueName);
-                        }
-                    }
-                }
+                int num = GetAmount(inventory, __instance.items.ToList());
                 __result = (num >= __instance.amount);
                 return false;
             }
@@ -167,16 +173,16 @@ namespace CraftFromContainers
                     return true;
                 if(inv > 0)
                 {
-                    player.Inventory.RemoveItem(__instance.fuel.fuelItem.name, inv);
+                    player.Inventory.RemoveItem(__instance.fuel.fuelItem.UniqueName, inv);
                 }
                 int remain = incrementAmount - inv;
-                foreach (Storage_Small s in StorageManager.allStorages)
+                foreach (Storage_Small s in GetStorages())
                 {
                     int amount = s.GetInventoryReference().GetItemCount(__instance.fuel.fuelItem.UniqueName);
                     if (amount > 0)
                     {
                         var remove = Math.Min(amount, remain);
-                        s.GetInventoryReference().RemoveItem(__instance.fuel.fuelItem.name, remove);
+                        s.GetInventoryReference().RemoveItem(__instance.fuel.fuelItem.UniqueName, remove);
 
                         remain -= remove;
                         if (remain <= 0)
@@ -184,6 +190,41 @@ namespace CraftFromContainers
                     }
                 }
                 __instance.fuel.AddFuel(incrementAmount);
+                player.Animator.SetAnimation(PlayerAnimation.Trigger_Plant, true);
+                __result = true;
+                return false;
+            }
+        }
+        [HarmonyPatch(typeof(FuelNetwork), "AddFuel")]
+        static class FuelNetwork_AddFuel_Patch
+        {
+            public static bool Prefix(FuelNetwork __instance, Network_Player player, int incrementAmount, ref bool __result)
+            {
+                if (!modEnabled.Value || player == null || incrementAmount <= 0 || __instance.Fuel.HasMaxFuel() || !player.IsLocalPlayer)
+                    return true;
+
+                int inv = player.Inventory.GetItemCount(__instance.Fuel.fuelItem);
+                if (inv >= incrementAmount)
+                    return true;
+                if (inv > 0)
+                {
+                    player.Inventory.RemoveItem(__instance.Fuel.fuelItem.UniqueName, inv);
+                }
+                int remain = incrementAmount - inv;
+                foreach (Storage_Small s in GetStorages())
+                {
+                    int amount = s.GetInventoryReference().GetItemCount(__instance.Fuel.fuelItem.UniqueName);
+                    if (amount > 0)
+                    {
+                        var remove = Math.Min(amount, remain);
+                        s.GetInventoryReference().RemoveItem(__instance.Fuel.fuelItem.UniqueName, remove);
+
+                        remain -= remove;
+                        if (remain <= 0)
+                            break;
+                    }
+                }
+                __instance.Fuel.AddFuel(incrementAmount);
                 player.Animator.SetAnimation(PlayerAnimation.Trigger_Plant, true);
                 __result = true;
                 return false;
@@ -211,12 +252,138 @@ namespace CraftFromContainers
                 return codes.AsEnumerable();
             }
         }
+        
+        [HarmonyPatch(typeof(FuelNetwork), nameof(FuelNetwork.OnIsRayed))]
+        static class FuelNetwork_OnIsRayed_Patch
+        {
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                Dbgl($"Transpiling FuelNetwork.OnIsRayed");
+                var codes = new List<CodeInstruction>(instructions);
+                for (int i = 0; i < codes.Count; i++)
+                {
+                    if (codes[i].opcode == OpCodes.Callvirt && (MethodInfo)codes[i].operand == AccessTools.Method(typeof(Inventory), nameof(Inventory.GetItemCount), new Type[] { typeof(Item_Base) }))
+                    {
+                        Dbgl("adding method to check storages");
+                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetItemCount))));
+                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Fuel), nameof(Fuel.fuelItem))));
+                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(FuelNetwork), "fuel")));
+                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldarg_0));
+                    }
+                }
+
+                return codes.AsEnumerable();
+            }
+        }
+        
+        [HarmonyPatch(typeof(Tank), "HandleAddFuel")]
+        static class Tank_HandleAddFuel_Patch
+        {
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                Dbgl($"Transpiling Tank_HandleAddFuel");
+                var codes = new List<CodeInstruction>(instructions);
+                for (int i = 0; i < codes.Count; i++)
+                {
+                    if (codes[i].opcode == OpCodes.Callvirt && (MethodInfo)codes[i].operand == AccessTools.Method(typeof(Inventory), nameof(Inventory.GetItemCount), new Type[] { typeof(Item_Base) }))
+                    {
+                        Dbgl("adding method to check storages");
+                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetItemCount))));
+                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Tank), "defaultFuelToAdd")));
+                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldarg_0));
+                        break;
+                    }
+                }
+
+                return codes.AsEnumerable();
+            }
+        }
+        
+        [HarmonyPatch(typeof(Tank), "ModifyTank")]
+        static class Tank_ModifyTank_Patch
+        {
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                Dbgl($"Transpiling Tank.ModifyTank");
+                var codes = new List<CodeInstruction>(instructions);
+                for (int i = 0; i < codes.Count; i++)
+                {
+                    if (codes[i].opcode == OpCodes.Callvirt && (MethodInfo)codes[i].operand == AccessTools.Method(typeof(Inventory), nameof(Inventory.RemoveItemUses)))
+                    {
+                        Dbgl("adding method to take from storages");
+                        codes[i].opcode = OpCodes.Call;
+                        codes[i].operand = AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.RemoveItemUses));
+                        break;
+                    }
+                }
+
+                return codes.AsEnumerable();
+            }
+        }
+
+        public static void RemoveItemUses(Inventory inventory, string uniqueItemName, int usesToRemove, bool addItemAfterUseToInventory)
+        {
+            if (!modEnabled.Value)
+            {
+                inventory.RemoveItemUses(uniqueItemName, usesToRemove, addItemAfterUseToInventory);
+                return;
+            }
+            if (usesToRemove == 0)
+            {
+                return;
+            }
+            Item_Base itemByName = ItemManager.GetItemByName(uniqueItemName);
+            if (itemByName == null)
+            {
+                return;
+            }
+            Slot slot = null;
+            var lpi = AccessTools.StaticFieldRefAccess<Inventory, PlayerInventory>("localPlayerInventory");
+            foreach (Slot slot2 in inventory.allSlots)
+            {
+                if (usesToRemove > 0 && !slot2.IsEmpty && slot2.itemInstance.UniqueIndex == itemByName.UniqueIndex)
+                {
+                    slot = slot2;
+                    if (slot2.itemInstance.UsesInStack >= usesToRemove)
+                    {
+                        slot2.IncrementUses(-usesToRemove, addItemAfterUseToInventory);
+                        if (lpi.hotbar.IsSelectedHotSlot(slot2))
+                        {
+                            lpi.hotbar.ReselectCurrentSlot();
+                        }
+                        break;
+                    }
+                    usesToRemove -= slot2.itemInstance.UsesInStack;
+                    slot2.IncrementUses(-slot2.itemInstance.UsesInStack, addItemAfterUseToInventory);
+                    if (lpi.hotbar.IsSelectedHotSlot(slot2))
+                    {
+                        lpi.hotbar.ReselectCurrentSlot();
+                    }
+                }
+            }
+            if(usesToRemove > 0)
+            {
+                foreach (Storage_Small s in GetStorages())
+                {
+                    int amount = s.GetInventoryReference().GetItemCount(uniqueItemName);
+                    if (amount > 0)
+                    {
+                        var remove = Math.Min(amount, usesToRemove);
+                        s.GetInventoryReference().RemoveItem(uniqueItemName, remove);
+
+                        usesToRemove -= remove;
+                        if (usesToRemove <= 0)
+                            break;
+                    }
+                }
+            }
+        }
 
         private static int GetItemCount(int inv, Item_Base fuelItem)
         {
             if (!modEnabled.Value || inv != 0 || fuelItem is null)
                 return inv;
-            foreach (Storage_Small s in StorageManager.allStorages)
+            foreach (Storage_Small s in GetStorages())
             {
                 if (s.GetInventoryReference().GetItemCount(fuelItem.UniqueName) > 0)
                     return 1;
