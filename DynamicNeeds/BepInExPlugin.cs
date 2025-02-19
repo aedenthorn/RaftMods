@@ -28,12 +28,12 @@ namespace DynamicNeeds
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
 
-            Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
+            Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), Info.Metadata.GUID);
         }
         [HarmonyPatch(typeof(PersonController), "GroundControll")]
-        public static class PersonController_GroundControll_Patch
+        private static class PersonController_GroundControll_Patch
         {
-            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
                 Dbgl($"Transpiling PersonController_GroundControll");
                 var codes = new List<CodeInstruction>(instructions);
@@ -53,9 +53,9 @@ namespace DynamicNeeds
         }
         
         [HarmonyPatch(typeof(PersonController), "WaterControll")]
-        public static class PersonController_WaterControll_Patch
+        private static class PersonController_WaterControll_Patch
         {
-            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
                 Dbgl($"Transpiling PersonController_WaterControll");
                 var codes = new List<CodeInstruction>(instructions);
@@ -74,9 +74,9 @@ namespace DynamicNeeds
         }
         
         [HarmonyPatch(typeof(Stat_Oxygen), "Update")]
-        public static class Stat_Oxygen_Update_Patch
+        private static class Stat_Oxygen_Update_Patch
         {
-            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
                 Dbgl($"Transpiling Stat_Oxygen_Update");
                 var codes = new List<CodeInstruction>(instructions);

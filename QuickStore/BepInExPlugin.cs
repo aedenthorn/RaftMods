@@ -46,6 +46,8 @@ namespace QuickStore
         public static bool running = false;
         public void Update()
         {
+            if (!modEnabled.Value || ComponentManager<PlayerInventory>.Value == null)
+                return;
             if (!running && AedenthornUtils.CheckKeyDown(hotkey.Value))
             {
                 Dbgl("Quick store");
@@ -120,46 +122,57 @@ namespace QuickStore
                         for (int k = ic.collectedItems.Count - 1; k >= 0; k--)
                         {
                             PickupItem_Networked pin = ic.collectedItems[k];
-                            if (pin?.PickupItem?.yieldHandler == null || pin.PickupItem.yieldHandler.Yield.Count == 0)
+                            if (pin?.gameObject.activeSelf != true || pin?.PickupItem?.yieldHandler == null || pin.PickupItem.yieldHandler.Yield.Count == 0)
                                 continue;
                             for (int i = pin.PickupItem.yieldHandler.Yield.Count - 1; i >= 0; i--)
                             {
+                                if (pin.PickupItem.yieldHandler.Yield[i].item == null)
+                                    continue;
+                                int remain  = pin.PickupItem.yieldHandler.Yield[i].amount;
                                 foreach (Storage_Small s in StorageManager.allStorages)
                                 {
                                     if (range.Value >= 0 && Vector3.Distance(ic.transform.position, s.transform.position) > range.Value)
                                         continue;
                                     if (s.GetInventoryReference().GetItemCount(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName) > 0)
                                     {
-                                        int remain = s.GetInventoryReference().AddItem(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName, pin.PickupItem.yieldHandler.Yield[i].amount);
-                                        Dbgl($"Got match for {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{pin.PickupItem.yieldHandler.Yield[i].amount} in storage, remaining {remain}");
-                                        if (remain == 0)
+                                        var newRemain = s.GetInventoryReference().AddItem(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName, remain);
+                                        if(newRemain != remain)
                                         {
-                                            Collider[] componentsInChildren = pin.GetComponentsInChildren<Collider>();
-                                            if (componentsInChildren != null)
-                                            {
-                                                foreach (Collider collider in componentsInChildren)
-                                                {
-                                                    if (!(collider == null))
-                                                    {
-                                                        collider.enabled = true;
-                                                    }
-                                                }
-                                            }
-                                            WaterFloatSemih2 component = pin.GetComponent<WaterFloatSemih2>();
-                                            if (component != null)
-                                            {
-                                                component.enabled = true;
-                                            }
-                                            PickupObjectManager.RemovePickupItem(pin);
-
-                                            ic.collectedItems.RemoveAt(k);
-                                            goto next;
+                                            Dbgl($"Put {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{remain - newRemain} in storage, {newRemain} remaining");
+                                            remain = newRemain;
                                         }
                                     }
                                 }
+                                if (remain != pin.PickupItem.yieldHandler.Yield[i].amount)
+                                {
+                                    Collider[] componentsInChildren = pin.GetComponentsInChildren<Collider>();
+                                    if (componentsInChildren != null)
+                                    {
+                                        foreach (Collider collider in componentsInChildren)
+                                        {
+                                            if (!(collider == null))
+                                            {
+                                                collider.enabled = true;
+                                            }
+                                        }
+                                    }
+                                    WaterFloatSemih2 component = pin.GetComponent<WaterFloatSemih2>();
+                                    if (component != null)
+                                    {
+                                        component.enabled = true;
+                                    }
+                                    if (remain != 0)
+                                    {
+                                        Dbgl($"Sending {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{remain} to player inventory");
+
+                                        pi.AddItem(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName, remain);
+                                    }
+                                    PickupObjectManager.RemovePickupItem(pin);
+                                    ic.collectedItems.RemoveAt(k);
+                                    break;
+                                }
+
                             }
-                        next:
-                            continue;
                         }
                     }
                 }
