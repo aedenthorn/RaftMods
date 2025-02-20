@@ -14,7 +14,7 @@ namespace CancelHook
     [BepInPlugin("aedenthorn.CancelHook", "Cancel Hook", "0.2.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
-        private static BepInExPlugin context;
+        public static BepInExPlugin context;
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
@@ -24,7 +24,7 @@ namespace CancelHook
             if (isDebug.Value)
                 Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
         } 
-        private void Awake()
+        public void Awake()
         {
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");

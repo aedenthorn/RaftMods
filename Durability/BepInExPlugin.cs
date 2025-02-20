@@ -12,7 +12,7 @@ namespace Durability
     [BepInPlugin("aedenthorn.Durability", "Durability", "0.1.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
-        private static BepInExPlugin context;
+        public static BepInExPlugin context;
 
         public static ConfigEntry<float> fluidDurabilityMultiplier;
         public static ConfigEntry<float> foodDurabilityMultiplier;
@@ -32,7 +32,7 @@ namespace Durability
             if (isDebug.Value)
                 Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
         }
-        private void Awake()
+        public void Awake()
         {
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");

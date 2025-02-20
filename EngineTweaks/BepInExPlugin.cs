@@ -10,8 +10,8 @@ namespace EngineTweaks
     [BepInPlugin("aedenthorn.EngineTweaks", "Engine Tweaks", "0.1.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
-        private static BepInExPlugin context;
-        private static bool skipOthers;
+        public static BepInExPlugin context;
+        public static bool skipOthers;
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
@@ -25,7 +25,7 @@ namespace EngineTweaks
             if (isDebug.Value)
                 Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
         } 
-        private void Awake()
+        public void Awake()
         {
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");

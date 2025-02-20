@@ -12,7 +12,7 @@ namespace FullReturn
     [BepInPlugin("aedenthorn.FullReturn", "Full Return", "0.1.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
-        private static BepInExPlugin context;
+        public static BepInExPlugin context;
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
@@ -23,8 +23,8 @@ namespace FullReturn
         {
             if (isDebug.Value)
                 Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
-        } 
-        private void Awake()
+        }
+        public void Awake()
         {
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
@@ -35,11 +35,11 @@ namespace FullReturn
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
         }
 		[HarmonyPatch(typeof(RemovePlaceables), nameof(RemovePlaceables.ReturnItemsFromBlock))]
-		static class RemovePlaceables_ReturnItemsFromBlock_Patch
+        public static class RemovePlaceables_ReturnItemsFromBlock_Patch
         {
-            public static void Prefix(Block block, Network_Player player, bool giveItems)
+            public static void Postfix(Block block, Network_Player player, bool giveItems)
             {
-                if (!modEnabled.Value || !giveItems || !block.Reinforced || GameModeValueManager.GetCurrentGameModeValue().playerSpecificVariables.unlimitedResources)
+                if (!modEnabled.Value || !giveItems || !block.Reinforced || !returnFortification.Value || GameModeValueManager.GetCurrentGameModeValue().playerSpecificVariables.unlimitedResources)
                     return;
                 var item = ItemManager.GetAllItems().FirstOrDefault(i => i.UniqueName.Equals("Block_FoundationArmor"));
                 if (item is null)
@@ -67,7 +67,7 @@ namespace FullReturn
             }
         }
 
-        private static float GetPortion(float value)
+        public static float GetPortion(float value)
         {
             if (!modEnabled.Value)
                 return value;

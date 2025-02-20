@@ -9,21 +9,24 @@ using UnityEngine;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Collections;
+using System;
 
 namespace QuickStore
 {
     [BepInPlugin("aedenthorn.QuickStore", "Quick Store", "0.1.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
-        private static BepInExPlugin context;
+        public static BepInExPlugin context;
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
         public static ConfigEntry<bool> storeFromHotbar;
         public static ConfigEntry<bool> storeFromNets;
+        public static ConfigEntry<bool> storeEggs;
         public static ConfigEntry<string> hotkey;
         public static ConfigEntry<string> disallowedItems;
         public static ConfigEntry<float> range;
+        public static bool suppress;
 
         public static void Dbgl(string str = "", bool pref = true)
         {
@@ -37,11 +40,12 @@ namespace QuickStore
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
             storeFromHotbar = Config.Bind<bool>("Options", "StoreFromHotbar", false, "Store items from the hotbar");
             storeFromNets = Config.Bind<bool>("Options", "StoreFromNets", true, "Store items caught in net blocks");
+            storeEggs = Config.Bind<bool>("Options", "StoreEggs", true, "Store eggs laid by cluckers");
 			hotkey = Config.Bind<string>("Options", "Hotkey", "k", "Hotkey to trigger quick store");
 			range = Config.Bind<float>("Options", "Range", 10, "Range in metres from storage to allow quick store (-1 is infinite range)");
 			disallowedItems = Config.Bind<string>("Options", "DisallowedItems", "", "List of items that will not be moved (comma-separated)");
 
-            //Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
+            Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
         }
         public static bool running = false;
         public void Update()
@@ -53,6 +57,7 @@ namespace QuickStore
                 Dbgl("Quick store");
                 var disallowedList = disallowedItems.Value.Split(',').ToList();
                 var pi = ComponentManager<PlayerInventory>.Value;
+                InventoryPickup ip = AccessTools.FieldRefAccess<PlayerInventory, InventoryPickup>(pi, "inventoryPickup");
                 foreach (var slot in pi.allSlots)
                 {
                     if (slot.itemInstance is null || disallowedList.Contains(slot.itemInstance.UniqueName) || (!storeFromHotbar.Value && pi.hotbar.ContainsSlot(slot)))
@@ -63,8 +68,11 @@ namespace QuickStore
                     {
                         if (range.Value >= 0 && Vector3.Distance(ComponentManager<Raft_Network>.Value.GetLocalPlayer().transform.position, s.transform.position) > range.Value)
                             continue;
-                        if (s.GetInventoryReference().GetItemCount(slotName) > 0)
+                        var found = s.GetInventoryReference().GetItemCount(slotName);
+                        if (found > 0)
                         {
+                            Dbgl($"Found {slotName} x{found} in storage");
+
                             s.GetInventoryReference().AddItem(slot.itemInstance, false);
                             if (slot.itemInstance.Amount == 0)
                             {
@@ -85,7 +93,6 @@ namespace QuickStore
                     {
                         int remaining = (slot.itemInstance is null) ? 0 : slot.itemInstance.Amount;
                         Dbgl($"Stored {originalAmount - remaining} {slotName}");
-                        var ip = FindObjectOfType<InventoryPickup>();
                         //ip.ShowItem(slotName, originalAmount - remaining);
                         //continue;
                         InventoryPickupMenuItem firstItem = (InventoryPickupMenuItem)AccessTools.Method(typeof(InventoryPickup), "GetFirstItem").Invoke(ip, new object[] { });
@@ -117,18 +124,28 @@ namespace QuickStore
                 if (storeFromNets.Value)
                 {
                     var ics = FindObjectsOfType<ItemCollector>();
+                    if (ics == null)
+                    {
+                        Dbgl("no ItemCollector found");
+                        return;
+                    }
+                    Dbgl($"Found {ics.Length} ItemCollectors");
+
                     foreach (var ic in ics)
                     {
                         for (int k = ic.collectedItems.Count - 1; k >= 0; k--)
                         {
                             PickupItem_Networked pin = ic.collectedItems[k];
-                            if (pin?.gameObject.activeSelf != true || pin?.PickupItem?.yieldHandler == null || pin.PickupItem.yieldHandler.Yield.Count == 0)
+                            if (pin?.gameObject.activeSelf != true || pin?.PickupItem?.yieldHandler?.Yield == null || pin.PickupItem.yieldHandler.Yield.Count == 0)
                                 continue;
                             for (int i = pin.PickupItem.yieldHandler.Yield.Count - 1; i >= 0; i--)
                             {
                                 if (pin.PickupItem.yieldHandler.Yield[i].item == null)
+                                {
                                     continue;
+                                }
                                 int remain  = pin.PickupItem.yieldHandler.Yield[i].amount;
+                                Dbgl($"Trying to store from net: {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{remain}");
                                 foreach (Storage_Small s in StorageManager.allStorages)
                                 {
                                     if (range.Value >= 0 && Vector3.Distance(ic.transform.position, s.transform.position) > range.Value)
@@ -138,7 +155,8 @@ namespace QuickStore
                                         var newRemain = s.GetInventoryReference().AddItem(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName, remain);
                                         if(newRemain != remain)
                                         {
-                                            Dbgl($"Put {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{remain - newRemain} in storage, {newRemain} remaining");
+                                            ip.ShowItem(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName, remain - newRemain);
+                                            Dbgl($"\tStored {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{remain - newRemain} from collector net, remain: {newRemain}/{pin.PickupItem.yieldHandler.Yield[i].amount}");
                                             remain = newRemain;
                                         }
                                     }
@@ -163,7 +181,7 @@ namespace QuickStore
                                     }
                                     if (remain != 0)
                                     {
-                                        Dbgl($"Sending {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{remain} to player inventory");
+                                        Dbgl($"\tSending {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{remain} left over to player inventory");
 
                                         pi.AddItem(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName, remain);
                                     }
@@ -171,11 +189,55 @@ namespace QuickStore
                                     ic.collectedItems.RemoveAt(k);
                                     break;
                                 }
+                                else
+                                {
+                                    Dbgl($"\tall remain, skipping");
+                                }
 
                             }
                         }
                     }
                 }
+                if (storeEggs.Value)
+                {
+                    var pns = SingletonGeneric<GameManager>.Singleton.lockedPivot.gameObject.GetComponentsInChildren<PickupItem_Networked>();
+                    for(int i = 0; i < pns.Length; i++)
+                    {
+                        if (pns[i].PickupItem.yieldHandler != null && pns[i].PickupItem.yieldHandler.Yield.Any())
+                        {
+                            foreach(var e in pns[i].PickupItem.yieldHandler.Yield)
+                            {
+                                if(e.item.UniqueName == "Egg")
+                                {
+                                    
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        [HarmonyPatch(typeof(Inventory), nameof(Inventory.AddItem), new Type[] { typeof(ItemInstance), typeof(bool) })]
+        public static class Inventory_AddItem_Patch
+        {
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                Dbgl($"Transpiling Inventory.AddItem");
+                var codes = new List<CodeInstruction>(instructions);
+                for (int i = 0; i < codes.Count; i++)
+                {
+                    if (i < codes.Count - 1 && codes[i].opcode == OpCodes.Ldfld && codes[i].operand is FieldInfo && (FieldInfo)codes[i].operand == AccessTools.Field(typeof(Inventory), "soundManager") && codes[i + 1].opcode == OpCodes.Ldnull)
+                    {
+                        Dbgl("adding check for slot is null");
+                        codes.Insert(i + 4, codes[i+3].Clone());
+                        codes.Insert(i + 4, codes[i+2].Clone());
+                        codes.Insert(i + 4, codes[i+1].Clone());
+                        codes.Insert(i + 4, new CodeInstruction(OpCodes.Ldloc_0));
+                        break;
+                    }
+                }
+
+                return codes.AsEnumerable();
             }
         }
     }

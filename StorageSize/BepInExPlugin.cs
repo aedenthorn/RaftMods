@@ -10,8 +10,8 @@ namespace StorageSize
     [BepInPlugin("aedenthorn.StorageSize", "Storage Size", "0.1.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
-        private static readonly bool isDebug = true;
-        private static BepInExPlugin context;
+        public static readonly bool isDebug = true;
+        public static BepInExPlugin context;
 
         public static ConfigEntry<float> storageMult;
         public static ConfigEntry<bool> modEnabled;
@@ -25,7 +25,7 @@ namespace StorageSize
             if (isDebug)
                 Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
         } 
-        private void Awake()
+        public void Awake()
         {
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
@@ -36,7 +36,7 @@ namespace StorageSize
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
         }
-        private void Update()
+        public void Update()
         {
         }
         [HarmonyPatch(typeof(Inventory), "Awake")]

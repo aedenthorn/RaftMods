@@ -14,11 +14,12 @@ namespace CraftFromContainers
     [BepInPlugin("aedenthorn.CraftFromContainers", "Craft From Containers", "0.3.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
-        private static BepInExPlugin context;
+        public static BepInExPlugin context;
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
         public static ConfigEntry<float> range;
+        public static ConfigEntry<string> fuelModKey;
         public static bool creatingBlock;
 
         public static void Dbgl(string str = "", bool pref = true)
@@ -32,6 +33,7 @@ namespace CraftFromContainers
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
 			range = Config.Bind<float>("General", "Range", -1, "Range in meters; set to negative for no range limit.");
+            fuelModKey = Config.Bind<string>("General", "FuelModKey", "left shift", "Mod key to hold for filling fuel completely");
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
         }
@@ -285,20 +287,33 @@ namespace CraftFromContainers
                 var codes = new List<CodeInstruction>(instructions);
                 for (int i = 0; i < codes.Count; i++)
                 {
-                    if (codes[i].opcode == OpCodes.Callvirt && (MethodInfo)codes[i].operand == AccessTools.Method(typeof(Inventory), nameof(Inventory.GetItemCount), new Type[] { typeof(Item_Base) }))
+                    if (codes[i].opcode == OpCodes.Callvirt && codes[i].operand is MethodInfo && (MethodInfo)codes[i].operand == AccessTools.Method(typeof(Inventory), nameof(Inventory.GetItemCount), new Type[] { typeof(Item_Base) }))
                     {
                         Dbgl("adding method to check storages");
                         codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetItemCount))));
                         codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Tank), "defaultFuelToAdd")));
                         codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldarg_0));
-                        break;
+                        i += 3;
+                    }
+                    else if (codes[i].opcode == OpCodes.Call && codes[i].operand is MethodInfo && (MethodInfo)codes[i].operand == AccessTools.Method(typeof(MyInput), nameof(MyInput.GetButtonDown)))
+                    {
+                        Dbgl("adding method to add repeatedly");
+                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetKeyHeld))));
+                        i++;
                     }
                 }
 
                 return codes.AsEnumerable();
             }
         }
-        
+
+        public static bool GetKeyHeld(bool result)
+        {
+            if (!modEnabled.Value || result || !MyInput.GetButton("Interact") || !AedenthornUtils.CheckKeyHeld(fuelModKey.Value, true))
+                return result;
+            return true;
+        }
+
         [HarmonyPatch(typeof(Tank), "ModifyTank")]
         static class Tank_ModifyTank_Patch
         {
@@ -379,7 +394,7 @@ namespace CraftFromContainers
             }
         }
 
-        private static int GetItemCount(int inv, Item_Base fuelItem)
+        public static int GetItemCount(int inv, Item_Base fuelItem)
         {
             if (!modEnabled.Value || inv != 0 || fuelItem is null)
                 return inv;

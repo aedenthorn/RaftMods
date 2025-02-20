@@ -11,7 +11,7 @@ namespace SharkTweak
     [BepInPlugin("aedenthorn.SeagullTweak", "Seagull Tweak", "0.1.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
-        private static BepInExPlugin context;
+        public static BepInExPlugin context;
 
         public static ConfigEntry<float> speedMult;
         public static ConfigEntry<bool> modEnabled;
@@ -28,7 +28,7 @@ namespace SharkTweak
             if (isDebug.Value)
                 Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
         } 
-        private void Awake()
+        public void Awake()
         {
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
@@ -41,7 +41,7 @@ namespace SharkTweak
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
         }
-        private void Update()
+        public void Update()
         {
         }
 

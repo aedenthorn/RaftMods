@@ -43,6 +43,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Speed", "Speed\Speed.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RememberJoinType", "RememberJoinType\RememberJoinType.csproj", "{FE505C5B-6C04-4A3A-A778-8C340BA41151}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RemoveBuildPiece", "RemoveBuildPiece\RemoveBuildPiece.csproj", "{E7014063-949B-4556-A86E-501175A5B7AE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HereFishy", "HereFishy\HereFishy.csproj", "{1E579A1E-521E-4D7A-9146-5E2EBED5536C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -129,6 +133,14 @@ Global
 		{FE505C5B-6C04-4A3A-A778-8C340BA41151}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE505C5B-6C04-4A3A-A778-8C340BA41151}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FE505C5B-6C04-4A3A-A778-8C340BA41151}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E7014063-949B-4556-A86E-501175A5B7AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E7014063-949B-4556-A86E-501175A5B7AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E7014063-949B-4556-A86E-501175A5B7AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E7014063-949B-4556-A86E-501175A5B7AE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E579A1E-521E-4D7A-9146-5E2EBED5536C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E579A1E-521E-4D7A-9146-5E2EBED5536C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E579A1E-521E-4D7A-9146-5E2EBED5536C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E579A1E-521E-4D7A-9146-5E2EBED5536C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

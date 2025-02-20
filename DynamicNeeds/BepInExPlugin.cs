@@ -12,7 +12,7 @@ namespace DynamicNeeds
     [BepInPlugin("aedenthorn.DynamicNeeds", "Dynamic Needs", "0.1.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
-        private static BepInExPlugin context;
+        public static BepInExPlugin context;
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
@@ -31,9 +31,9 @@ namespace DynamicNeeds
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), Info.Metadata.GUID);
         }
         [HarmonyPatch(typeof(PersonController), "GroundControll")]
-        private static class PersonController_GroundControll_Patch
+        public static class PersonController_GroundControll_Patch
         {
-            private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
                 Dbgl($"Transpiling PersonController_GroundControll");
                 var codes = new List<CodeInstruction>(instructions);
@@ -53,9 +53,9 @@ namespace DynamicNeeds
         }
         
         [HarmonyPatch(typeof(PersonController), "WaterControll")]
-        private static class PersonController_WaterControll_Patch
+        public static class PersonController_WaterControll_Patch
         {
-            private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
                 Dbgl($"Transpiling PersonController_WaterControll");
                 var codes = new List<CodeInstruction>(instructions);
@@ -74,9 +74,9 @@ namespace DynamicNeeds
         }
         
         [HarmonyPatch(typeof(Stat_Oxygen), "Update")]
-        private static class Stat_Oxygen_Update_Patch
+        public static class Stat_Oxygen_Update_Patch
         {
-            private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
                 Dbgl($"Transpiling Stat_Oxygen_Update");
                 var codes = new List<CodeInstruction>(instructions);
@@ -95,14 +95,14 @@ namespace DynamicNeeds
         }
 
 
-        private static float GetGroundSpeedMultiplier(float multiplier, PersonController pc)
+        public static float GetGroundSpeedMultiplier(float multiplier, PersonController pc)
         {
             if(pc.crouching) 
                 return multiplier;
             return GetStatWellBeingMultiplier(multiplier);
         }
 
-        private static float GetStatWellBeingMultiplier(float multiplier)
+        public static float GetStatWellBeingMultiplier(float multiplier)
         {
             if (!modEnabled.Value)
                 return multiplier;

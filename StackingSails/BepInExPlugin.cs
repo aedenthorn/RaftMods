@@ -11,7 +11,7 @@ namespace StackingSails
     [BepInPlugin("aedenthorn.StackingSails", "Stacking Sails", "0.3.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
-        private static BepInExPlugin context;
+        public static BepInExPlugin context;
 
         public static ConfigEntry<float> speedMult;
         public static ConfigEntry<bool> modEnabled;
@@ -26,7 +26,7 @@ namespace StackingSails
             if (isDebug.Value)
                 Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
         } 
-        private void Awake()
+        public void Awake()
         {
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
@@ -38,7 +38,7 @@ namespace StackingSails
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
         }
-        private void Update()
+        public void Update()
         {
         }
 

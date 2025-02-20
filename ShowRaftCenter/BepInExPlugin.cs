@@ -7,7 +7,7 @@ namespace ShowRaftCenter
     [BepInPlugin("aedenthorn.ShowRaftCenter", "Show Raft Center", "0.1.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
-        private static BepInExPlugin context;
+        public static BepInExPlugin context;
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;

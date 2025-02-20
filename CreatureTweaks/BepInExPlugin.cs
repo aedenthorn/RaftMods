@@ -13,7 +13,7 @@ namespace CreatureTweaks
     [BepInPlugin("aedenthorn.CreatureTweaks", "Creature Tweaks", "0.2.1")]
     public class BepInExPlugin : BaseUnityPlugin
     {
-        private static BepInExPlugin context;
+        public static BepInExPlugin context;
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
@@ -33,7 +33,7 @@ namespace CreatureTweaks
             if (isDebug.Value)
                 Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
         }
-        private void Awake()
+        public void Awake()
         {
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
@@ -78,7 +78,7 @@ namespace CreatureTweaks
                 return (!modEnabled.Value || !sharkNeverBitePlayer.Value || !Environment.StackTrace.Contains("Shark"));
             }
         }
-        private static float GetDrivebyTimerIncrement(float time)
+        public static float GetDrivebyTimerIncrement(float time)
         {
             if (!modEnabled.Value)
                 return time;
@@ -104,7 +104,7 @@ namespace CreatureTweaks
             }
         }
 
-        private static float GetBlockSearchTimerIncrement(float time)
+        public static float GetBlockSearchTimerIncrement(float time)
         {
             if (!modEnabled.Value)
                 return time;

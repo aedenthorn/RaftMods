@@ -11,8 +11,8 @@ namespace AnchorFromWheel
     [BepInPlugin("aedenthorn.AnchorFromWheel", "Anchor From Wheel", "0.1.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
-        private static BepInExPlugin context;
-        private static bool skipOthers;
+        public static BepInExPlugin context;
+        public static bool skipOthers;
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
