@@ -1,14 +1,12 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
-using Steamworks;
-using System;
 using System.Reflection;
 using UnityEngine;
 
-namespace GlobalBatteryCharge
+namespace SeagullsLayEggs
 {
-    [BepInPlugin("aedenthorn.GlobalBatteryCharge", "Global Battery Charge", "0.1.0")]
+    [BepInPlugin("aedenthorn.SeagullsLayEggs", "Seagulls Lay Eggs", "0.1.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -27,7 +25,6 @@ namespace GlobalBatteryCharge
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
-            range = Config.Bind<float>("Options", "Range", -1f, "Max range to charge");
 
             if (!modEnabled.Value)
                 return;
@@ -35,19 +32,15 @@ namespace GlobalBatteryCharge
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
         }
 
-		[HarmonyPatch(typeof(WindTurbine), "ChargeBatteries")]
-		public static class WindTurbine_ChargeBatteries_Patch
+		[HarmonyPatch(typeof(Seagull), "LeaveNest")]
+		public static class Seagull_LeaveNest_Patch
         {
-            public static bool Prefix(WindTurbine __instance)
+            public static void Prefix(bool layEggs, ref bool ___dropEggInNest)
 			{
-                if (!modEnabled.Value)
-					return true;
-                foreach(var battery in FindObjectsOfType<Battery>())
-                {
-                    if(range.Value < 0 || Vector3.Distance(__instance.transform.position, battery.transform.position) < range.Value)
-                        AccessTools.Method(typeof(WindTurbine), "RechargeBattery").Invoke(__instance, new object[] { battery });
-                }
-                return false;
+                if (!modEnabled.Value || !layEggs)
+					return;
+                Dbgl("Laying egg");
+                ___dropEggInNest = true;
             }
         }
     }

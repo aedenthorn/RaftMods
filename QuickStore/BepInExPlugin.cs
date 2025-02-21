@@ -1,19 +1,16 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
-using FMODUnity;
 using HarmonyLib;
-using System.Collections.Generic;
-using System.Reflection;
-using UltimateWater;
-using UnityEngine;
-using System.Linq;
-using System.Reflection.Emit;
-using System.Collections;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using UnityEngine;
 
 namespace QuickStore
 {
-    [BepInPlugin("aedenthorn.QuickStore", "Quick Store", "0.1.0")]
+    [BepInPlugin("aedenthorn.QuickStore", "Quick Store", "0.2.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -28,11 +25,11 @@ namespace QuickStore
         public static ConfigEntry<float> range;
         public static bool suppress;
 
-        public static void Dbgl(string str = "", bool pref = true)
+        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = true)
         {
             if (isDebug.Value)
-                Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
-        } 
+                context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
+        }
         public void Awake()
         {
             context = this;

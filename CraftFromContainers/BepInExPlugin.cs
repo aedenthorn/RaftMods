@@ -11,7 +11,7 @@ using static SO_TradingPost_Buyable;
 
 namespace CraftFromContainers
 {
-    [BepInPlugin("aedenthorn.CraftFromContainers", "Craft From Containers", "0.3.0")]
+    [BepInPlugin("aedenthorn.CraftFromContainers", "Craft From Containers", "0.4.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -22,11 +22,11 @@ namespace CraftFromContainers
         public static ConfigEntry<string> fuelModKey;
         public static bool creatingBlock;
 
-        public static void Dbgl(string str = "", bool pref = true)
+        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = true)
         {
             if (isDebug.Value)
-                Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
-        } 
+                context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
+        }
         public void Awake()
         {
             context = this;
@@ -295,23 +295,10 @@ namespace CraftFromContainers
                         codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldarg_0));
                         i += 3;
                     }
-                    else if (codes[i].opcode == OpCodes.Call && codes[i].operand is MethodInfo && (MethodInfo)codes[i].operand == AccessTools.Method(typeof(MyInput), nameof(MyInput.GetButtonDown)))
-                    {
-                        Dbgl("adding method to add repeatedly");
-                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetKeyHeld))));
-                        i++;
-                    }
                 }
 
                 return codes.AsEnumerable();
             }
-        }
-
-        public static bool GetKeyHeld(bool result)
-        {
-            if (!modEnabled.Value || result || !MyInput.GetButton("Interact") || !AedenthornUtils.CheckKeyHeld(fuelModKey.Value, true))
-                return result;
-            return true;
         }
 
         [HarmonyPatch(typeof(Tank), "ModifyTank")]

@@ -20,11 +20,11 @@ namespace EngineTweaks
         public static ConfigEntry<string> toggleText;
         public static ConfigEntry<bool> useToggleOnSteeringWheel;
 
-        public static void Dbgl(string str = "", bool pref = true)
+        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = true)
         {
             if (isDebug.Value)
-                Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
-        } 
+                context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
+        }
         public void Awake()
         {
             context = this;

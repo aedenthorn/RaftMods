@@ -15,20 +15,22 @@ namespace StorageSize
 
         public static ConfigEntry<float> storageMult;
         public static ConfigEntry<bool> modEnabled;
+        public static ConfigEntry<bool> isDebug;
 
         public static double lastTime = 1;
         public static bool pausedMenu = false; 
-        public static bool wasActive = false; 
+        public static bool wasActive = false;
 
-        public static void Dbgl(string str = "", bool pref = true)
+        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = true)
         {
-            if (isDebug)
-                Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
-        } 
+            if (isDebug.Value)
+                context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
+        }
         public void Awake()
         {
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
+            isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
             storageMult = Config.Bind<float>("General", "StorageMult", 2f, "Storage size multiplier");
 
             if (!modEnabled.Value)

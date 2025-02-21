@@ -19,11 +19,11 @@ namespace CancelHook
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
 
-        public static void Dbgl(string str = "", bool pref = true)
+        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = true)
         {
             if (isDebug.Value)
-                Debug.Log((pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
-        } 
+                context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
+        }
         public void Awake()
         {
             context = this;
@@ -34,9 +34,9 @@ namespace CancelHook
         }
 
         [HarmonyPatch(typeof(Hook), "Update")]
-        static class HandleLocalClient_Patch
+        public static class HandleLocalClient_Patch
         {
-            static void Postfix(Hook __instance, Network_Player ___playerNetwork)
+            public static void Postfix(Hook __instance, Network_Player ___playerNetwork)
             {
                 if (!modEnabled.Value)
                     return;
