@@ -205,11 +205,57 @@ namespace QuickStore
                     {
                         if (pns[i].PickupItem.yieldHandler != null && pns[i].PickupItem.yieldHandler.Yield.Any())
                         {
-                            foreach(var e in pns[i].PickupItem.yieldHandler.Yield)
+                            for (int j = 0; j < pns[i].PickupItem.yieldHandler.Yield.Count; j++)
                             {
-                                if(e.item.UniqueName == "Egg")
+                                if (pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName == "Egg")
                                 {
-                                    
+                                    int remain = pns[i].PickupItem.yieldHandler.Yield[j].amount;
+                                    foreach (Storage_Small s in StorageManager.allStorages)
+                                    {
+                                        if (range.Value >= 0 && Vector3.Distance(pns[i].transform.position, s.transform.position) > range.Value)
+                                            continue;
+                                        if (s.GetInventoryReference().GetItemCount(pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName) > 0)
+                                        {
+                                            var newRemain = s.GetInventoryReference().AddItem(pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName, remain);
+                                            if (newRemain != remain)
+                                            {
+                                                ip.ShowItem(pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName, remain - newRemain);
+                                                Dbgl($"Stored Egg, remain: {newRemain}/{pns[i].PickupItem.yieldHandler.Yield[j].amount}");
+                                                remain = newRemain;
+                                            }
+                                        }
+                                    }
+                                    if (remain != pns[i].PickupItem.yieldHandler.Yield[j].amount)
+                                    {
+                                        Collider[] componentsInChildren = pns[i].GetComponentsInChildren<Collider>();
+                                        if (componentsInChildren != null)
+                                        {
+                                            foreach (Collider collider in componentsInChildren)
+                                            {
+                                                if (!(collider == null))
+                                                {
+                                                    collider.enabled = true;
+                                                }
+                                            }
+                                        }
+                                        WaterFloatSemih2 component = pns[i].GetComponent<WaterFloatSemih2>();
+                                        if (component != null)
+                                        {
+                                            component.enabled = true;
+                                        }
+                                        if (remain != 0)
+                                        {
+                                            Dbgl($"\tSending {pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName} x{remain} left over to player inventory");
+
+                                            pi.AddItem(pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName, remain);
+                                        }
+                                        PickupObjectManager.RemovePickupItem(pns[i]);
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        Dbgl($"\tall remain, skipping");
+                                    }
                                 }
                             }
                         }
