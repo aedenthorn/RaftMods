@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace HereFishy
 {
-    [BepInPlugin("aedenthorn.HereFishy", "Here Fishy", "0.1.0")]
+    [BepInPlugin("aedenthorn.HereFishy", "Here Fishy", "0.2.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -23,7 +23,7 @@ namespace HereFishy
         public static ConfigEntry<bool> playWeee;
         public static ConfigEntry<bool> consumeBait;
         public static ConfigEntry<bool> loseDurability;
-        public static ConfigEntry<string> hotkey;
+        public static ConfigEntry<KeyCode> hotkey;
         public static ConfigEntry<string> genericModel;
 
         public static AudioClip fishyClip;
@@ -48,7 +48,7 @@ namespace HereFishy
             playWeee = Config.Bind<bool>("Options", "PlayWeee", true, "Play weee sound");
             consumeBait = Config.Bind<bool>("Options", "ConsumeBait", true, "Consume bait on catch");
             loseDurability = Config.Bind<bool>("Options", "LoseDurability", true, "Lose durability on catch");
-			hotkey = Config.Bind<string>("Options", "Hotkey", "h", "Hotkey to call fish");
+			hotkey = Config.Bind<KeyCode>("Options", "Hotkey", KeyCode.H, "Hotkey to call fish");
 			genericModel = Config.Bind<string>("Options", "GenericModel", "Raw_Mackerel", "Generic model to show for higher tier fish");
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
@@ -60,7 +60,7 @@ namespace HereFishy
         {
             public static void Postfix(FishingRod __instance, Throwable ___throwable, FishingBaitHandler ___fishingBaitHandler, Network_Player ___playerNetwork, bool ___isMetalRod, Rope ___rope)
             {
-                if (!modEnabled.Value || running || !___throwable.InHand || !___playerNetwork.IsLocalPlayer || !AedenthornUtils.CheckKeyDown(hotkey.Value))
+                if (!modEnabled.Value || running || !___throwable.InHand || !___playerNetwork.IsLocalPlayer || !Input.GetKeyDown(hotkey.Value))
                     return;
                 Dbgl("pressed here fishy button");
 

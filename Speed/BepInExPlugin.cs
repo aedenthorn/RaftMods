@@ -10,16 +10,16 @@ using UnityEngine;
 
 namespace Speed
 {
-    [BepInPlugin("aedenthorn.Speed", "Speed", "0.1.0")]
+    [BepInPlugin("aedenthorn.Speed", "Speed", "0.2.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
-        public static ConfigEntry<string> increaseHotkey;
-        public static ConfigEntry<string> decreaseHotkey;
-        public static ConfigEntry<string> swimModHotkey;
+        public static ConfigEntry<KeyCode> increaseHotkey;
+        public static ConfigEntry<KeyCode> decreaseHotkey;
+        public static ConfigEntry<KeyCode> swimModHotkey;
         public static ConfigEntry<double> swimSpeedMult;
         public static ConfigEntry<double> moveSpeedMult;
 
@@ -35,9 +35,9 @@ namespace Speed
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
             moveSpeedMult = Config.Bind<double>("Speeds", "MoveSpeedMult", 1.5, "Move speed multiplier");
 			swimSpeedMult = Config.Bind<double>("Speeds", "SwimSpeedMult", 1.5, "Swim speed multiplier");
-            increaseHotkey = Config.Bind<string>("Options", "IncreaseHotkey", "=", "Hotkey to increase speed.");
-            decreaseHotkey = Config.Bind<string>("Options", "DecreaseHotkey", "-", "Hotkey to decrease speed.");
-            swimModHotkey = Config.Bind<string>("Options", "SwimModHotkey", "left alt", "Hotkey to switch to swim speed.");
+            increaseHotkey = Config.Bind<KeyCode>("Options", "IncreaseHotkey", KeyCode.Equals, "Hotkey to increase speed.");
+            decreaseHotkey = Config.Bind<KeyCode>("Options", "DecreaseHotkey", KeyCode.Minus, "Hotkey to decrease speed.");
+            swimModHotkey = Config.Bind<KeyCode>("Options", "SwimModHotkey", KeyCode.LeftAlt, "Hotkey to hold to modify swim speed.");
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), Info.Metadata.GUID);
         }
@@ -45,9 +45,9 @@ namespace Speed
         {
             if (!modEnabled.Value || ComponentManager<Raft_Network>.Value.GetLocalPlayer() == null)
                 return;
-            if (AedenthornUtils.CheckKeyDown(increaseHotkey.Value))
+            if (Input.GetKeyDown(increaseHotkey.Value))
             {
-                if (AedenthornUtils.CheckKeyHeld(swimModHotkey.Value))
+                if (Input.GetKey(swimModHotkey.Value))
                 {
 
                     swimSpeedMult.Value = Math.Round(swimSpeedMult.Value + 0.1, 1);
@@ -59,9 +59,9 @@ namespace Speed
                     Dbgl($"move mult {moveSpeedMult.Value}");
                 }
             }
-            else if (AedenthornUtils.CheckKeyDown(decreaseHotkey.Value))
+            else if (Input.GetKeyDown(decreaseHotkey.Value))
             {
-                if (AedenthornUtils.CheckKeyHeld(swimModHotkey.Value))
+                if (Input.GetKey(swimModHotkey.Value))
                 {
                     swimSpeedMult.Value = Math.Round(Math.Max(0.1, swimSpeedMult.Value - 0.1),1);
                     Dbgl($"swim mult {swimSpeedMult.Value}");

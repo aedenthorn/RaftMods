@@ -7,18 +7,17 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
-using UnityEngine.UIElements;
-using static SO_TradingPost_Buyable;
 
 namespace SnowmobileEverywhere
 {
-    [BepInPlugin("aedenthorn.SnowmobileEverywhere", "Snowmobile Everywhere", "0.1.0")]
+    [BepInPlugin("aedenthorn.SnowmobileEverywhere", "Snowmobile Everywhere", "0.2.0")]
     public class BepInExPlugin : BaseUnityPlugin
     {
         public static BepInExPlugin context;
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
+        public static ConfigEntry<KeyCode> spawnKey;
 
         public static Dictionary<int, Vector3> posDict = new Dictionary<int, Vector3>();
 
@@ -32,11 +31,40 @@ namespace SnowmobileEverywhere
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
             isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
+            spawnKey = Config.Bind<KeyCode>("General", "SpawnKey", KeyCode.Keypad0, "Key to spawn a snowmobile");
 
             if (!modEnabled.Value)
                 return;
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
+        }
+        public void Update()
+        {
+            if (!modEnabled.Value || ComponentManager<Raft_Network>.Value.GetLocalPlayer() == null || !Input.GetKeyDown(spawnKey.Value))
+                return;
+            Dbgl("Spawn key pressed");
+
+            
+            var sms = ComponentManager<ObjectSpawnerManager>.Value.floatingObjectParent.GetComponentInChildren<SnowmobileShed>(true);
+            if (sms != null)
+            {
+                Dbgl("Spawning snowmobile");
+
+                Snowmobile sm = AccessTools.FieldRefAccess<SnowmobileShed, Snowmobile>(sms, "snowmobilePrefab");
+                var spawnedSnowmobile = UnityEngine.Object.Instantiate<Snowmobile>(sm, ComponentManager<Raft_Network>.Value.GetLocalPlayer().FeetPosition + ComponentManager<Raft_Network>.Value.GetLocalPlayer().transform.forward * 2f + Vector3.up, Quaternion.identity, null);
+                spawnedSnowmobile.ObjectIndex = SaveAndLoad.GetUniqueObjectIndex();
+                spawnedSnowmobile.BehaviourIndex = NetworkUpdateManager.GetUniqueBehaviourIndex();
+                NetworkIDManager.AddNetworkID(spawnedSnowmobile, typeof(Snowmobile));
+                NetworkIDManager.AddNetworkIDTick(spawnedSnowmobile);
+                spawnedSnowmobile.OnSnowmobileReset = (Action<Snowmobile, bool>)Delegate.Combine(spawnedSnowmobile.OnSnowmobileReset, new Action<Snowmobile, bool>(BepInExPlugin.OnSnowmobileReset));
+            }
+        }
+
+        public static void OnSnowmobileReset(Snowmobile snowmobile, bool arg2)
+        {
+            Dbgl("Destroying snowmobile");
+            snowmobile.MakeAllPlayersLeave();
+            Destroy(snowmobile.gameObject);
         }
 
         [HarmonyPatch(typeof(Snowmobile), "Update")]
@@ -58,19 +86,20 @@ namespace SnowmobileEverywhere
 
                 return codes.AsEnumerable();
             }
-            public static void Postfix(Snowmobile __instance, Rigidbody ___body, Transform ___groundCheckPoint, float ___groundRayLength)
+            public static void Postfix(Snowmobile __instance, Transform ___groundCheckPoint)
             {
+                if (!modEnabled.Value)
+                    return;
                 Raft raft = ComponentManager<Raft>.Value;
                 if (raft is null)
                 {
                     return;
                 }
-                RaycastHit raycastHit;
-                if (Physics.Raycast(___groundCheckPoint.position, -___groundCheckPoint.up, out raycastHit, 1, LayerMasks.MASK_GroundMask_Raft))
+                if (Physics.CheckSphere(___groundCheckPoint.position, 1, LayerMasks.MASK_GroundMask_Raft))
                 {
                     if (__instance.transform.parent == null)
                     {
-                        Dbgl("Locking snowmobile");
+                        Dbgl("Locking snowmobile to raft");
                         __instance.transform.SetParent(SingletonGeneric<GameManager>.Singleton.lockedPivot);
                     }
                     else if(__instance.DrivingPlayer == null)
@@ -89,31 +118,21 @@ namespace SnowmobileEverywhere
                     {
                         posDict.Remove(__instance.GetInstanceID());
                     }
-
-
-                    //__instance.transform.position = new Vector3(__instance.transform.position.x, Mathf.Max(-1, Mathf.Clamp(__instance.transform.position.y, raycastHit.collider.transform.position.y, raycastHit.collider.transform.position.y + 0.2f)), __instance.transform.position.z);
-                    //___body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-                    //___body.isKinematic = true;
-                    //__instance.OnSnowmobileReset = new Action<Snowmobile, bool>(BepInExPlugin.OnSnowmobileReset);
                 }
                 else
                 {
                     posDict.Remove(__instance.GetInstanceID());
                     if (__instance.transform.parent != null)
                     {
+                        Dbgl("Unlocking snowmobile from raft");
+
                         __instance.transform.SetParent(null);
                     }
                 }
             }
         }
+        
 
-        public static void OnSnowmobileReset(Snowmobile snowmobile, bool viaWater)
-        {
-            Dbgl("Resetting snowmobile");
-            snowmobile.transform.position = Vector3.up;
-            snowmobile.transform.rotation = Quaternion.identity;
-            snowmobile.transform.SetParent(SingletonGeneric<GameManager>.Singleton.lockedPivot);
-        }
 
         public static LayerMask GetLayerMask(LayerMask mask)
         {

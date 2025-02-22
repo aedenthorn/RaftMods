@@ -1,7 +1,12 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
+using UnityEngine;
 
 namespace EnableCheats
 {
@@ -12,6 +17,9 @@ namespace EnableCheats
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
+        public static ConfigEntry<bool> cheatsEnabled;
+        public static ConfigEntry<bool> devEnabled;
+        public static ConfigEntry<KeyCode> cheatSprintKey;
 
         public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = true)
         {
@@ -23,6 +31,9 @@ namespace EnableCheats
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
+			cheatsEnabled = Config.Bind<bool>("General", "CheatsEnabled", true, "Enable Cheats");
+			devEnabled = Config.Bind<bool>("General", "DevEnabled", false, "Enable dev mode");
+			cheatSprintKey = Config.Bind<KeyCode>("General", "CheatSprintKey", KeyCode.Mouse4, "Set a different sprint key");
 
             if (!modEnabled.Value)
                 return;
@@ -37,7 +48,7 @@ namespace EnableCheats
             {
                 if (!modEnabled.Value)
                     return true;
-                __result = true;
+                __result = cheatsEnabled.Value;
                 return false;
             }
         }
@@ -48,9 +59,48 @@ namespace EnableCheats
             {
                 if (!modEnabled.Value)
                     return true;
-                __result = true;
+                __result = devEnabled.Value;
                 return false;
             }
+        }
+        [HarmonyPatch(typeof(PersonController), "Update")]
+        static class PersonController_Update_Patch
+        {
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                Dbgl($"Transpiling PersonController_Update");
+                var codes = new List<CodeInstruction>(instructions);
+                for (int i = 0; i < codes.Count; i++)
+                {
+                    if (codes[i].opcode == OpCodes.Call && codes[i].operand is MethodInfo && (MethodInfo)codes[i].operand == AccessTools.Method(typeof(Input), nameof(Input.GetMouseButtonDown)))
+                    {
+                        Dbgl("adding method to override cheat sprint");
+                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetSprintKeyDown))));
+                        break;
+                    }
+                }
+
+                return codes.AsEnumerable();
+            }
+        }
+
+        private static bool GetSprintKeyDown(bool down)
+        {
+            if (!modEnabled.Value || cheatSprintKey.Value == KeyCode.None)
+            {
+                if (down)
+                {
+                    Dbgl("default down");
+                }
+                return down;
+            }
+            down = Input.GetKeyDown(cheatSprintKey.Value);
+            if (down)
+            {
+                Dbgl("key down");
+            }
+            return down;
+
         }
     }
 }

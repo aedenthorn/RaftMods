@@ -11,14 +11,14 @@ using static SO_TradingPost_Buyable;
 
 namespace RapidTankFill
 {
-    [BepInPlugin("aedenthorn.RapidTankFill", "Rapid Tank Fill", "0.1.0")]
+    [BepInPlugin("aedenthorn.RapidTankFill", "Rapid Tank Fill", "0.2.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
-        public static ConfigEntry<string> fuelModKey;
+        public static ConfigEntry<KeyCode> fuelModKey;
 
         public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = true)
         {
@@ -30,7 +30,7 @@ namespace RapidTankFill
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
-            fuelModKey = Config.Bind<string>("General", "ModKey", "left shift", "Mod key to hold for rapid filling");
+            fuelModKey = Config.Bind<KeyCode>("General", "ModKey", KeyCode.LeftShift, "Mod key to hold for rapid filling");
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
         }
@@ -59,7 +59,7 @@ namespace RapidTankFill
 
         public static bool GetKeyHeld(bool result)
         {
-            if (!modEnabled.Value || result || !MyInput.GetButton("Interact") || !AedenthornUtils.CheckKeyHeld(fuelModKey.Value, true))
+            if (!modEnabled.Value || result || !MyInput.GetButton("Interact") || !Input.GetKey(fuelModKey.Value))
                 return result;
             return true;
         }
