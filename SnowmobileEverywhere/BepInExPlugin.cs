@@ -51,7 +51,7 @@ namespace SnowmobileEverywhere
                 Dbgl("Spawning snowmobile");
 
                 Snowmobile sm = AccessTools.FieldRefAccess<SnowmobileShed, Snowmobile>(sms, "snowmobilePrefab");
-                var spawnedSnowmobile = UnityEngine.Object.Instantiate<Snowmobile>(sm, ComponentManager<Raft_Network>.Value.GetLocalPlayer().FeetPosition + ComponentManager<Raft_Network>.Value.GetLocalPlayer().transform.forward * 2f + Vector3.up, Quaternion.identity, null);
+                var spawnedSnowmobile = Instantiate<Snowmobile>(sm, ComponentManager<Raft_Network>.Value.GetLocalPlayer().FeetPosition + ComponentManager<Raft_Network>.Value.GetLocalPlayer().transform.forward * 2f + Vector3.up, Quaternion.identity, null);
                 spawnedSnowmobile.ObjectIndex = SaveAndLoad.GetUniqueObjectIndex();
                 spawnedSnowmobile.BehaviourIndex = NetworkUpdateManager.GetUniqueBehaviourIndex();
                 NetworkIDManager.AddNetworkID(spawnedSnowmobile, typeof(Snowmobile));
