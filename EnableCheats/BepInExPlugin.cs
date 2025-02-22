@@ -1,12 +1,14 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
+using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
+using static Pomp.Animation.AnimationParameterController.AnimationParamData;
 
 namespace EnableCheats
 {
@@ -17,7 +19,8 @@ namespace EnableCheats
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
-        public static ConfigEntry<bool> cheatsEnabled;
+        public static ConfigEntry<bool> cheatCommandsEnabled;
+        public static ConfigEntry<bool> cheatKeysEnabled;
         public static ConfigEntry<bool> devEnabled;
         public static ConfigEntry<KeyCode> cheatSprintKey;
 
@@ -31,36 +34,68 @@ namespace EnableCheats
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
-			cheatsEnabled = Config.Bind<bool>("General", "CheatsEnabled", true, "Enable Cheats");
+			cheatCommandsEnabled = Config.Bind<bool>("General", "CheatCommandsEnabled", true, "Enable cheat commands");
+			cheatKeysEnabled = Config.Bind<bool>("General", "CheatKeysEnabled", true, "Enable cheat keys");
 			devEnabled = Config.Bind<bool>("General", "DevEnabled", false, "Enable dev mode");
 			cheatSprintKey = Config.Bind<KeyCode>("General", "CheatSprintKey", KeyCode.Mouse4, "Set a different sprint key");
+
+            cheatKeysEnabled.SettingChanged += CheatKeysEnabled_SettingChanged;
 
             if (!modEnabled.Value)
                 return;
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
+
         }
 
-		[HarmonyPatch(typeof(Cheat), nameof(Cheat.AllowCheatsForUser))]
-		public static class Cheat_AllowCheatsForUser_Patch
+        private void CheatKeysEnabled_SettingChanged(object sender, EventArgs e)
+        {
+            Cheat.UseCheats = cheatKeysEnabled.Value;
+        }
+
+        //[HarmonyPatch(typeof(ItemManager), "LoadAllItems")]
+        public static class LoadAllItemsPatch
+        {
+            public static void Postfix(List<Item_Base> ___allAvailableItems)
+            {
+                Dbgl(string.Join("\n", ___allAvailableItems.Select(i => i.UniqueName)));
+
+            }
+        }
+        
+        [HarmonyPatch(typeof(Cheat), nameof(Cheat.AllowCheatsForLocalPlayer))]
+        public static class Cheat_AllowCheatsForLocalPlayer_Patch
         {
             public static bool Prefix(ref bool __result)
             {
                 if (!modEnabled.Value)
-                    return true;
-                __result = cheatsEnabled.Value;
+                    return true; 
+                __result = cheatKeysEnabled.Value;
                 return false;
             }
         }
-		[HarmonyPatch(typeof(Cheat), nameof(Cheat.IsLocalPlayerDev))]
-		public static class Cheat_IsLocalPlayerDev_Patch
+
+
+        [HarmonyPatch(typeof(Cheat), nameof(Cheat.AllowCheatsForUser))]
+        public static class Cheat_AllowCheatsForUser_Patch
         {
-            public static bool Prefix(ref bool __result)
+            public static bool Prefix(ref bool __result, CSteamID cSteamID)
             {
-                if (!modEnabled.Value)
+                if (!modEnabled.Value || ComponentManager<Network_Player>.Value == null || ComponentManager<Network_Player>.Value.steamID != cSteamID)
                     return true;
-                __result = devEnabled.Value;
+                __result = cheatCommandsEnabled.Value;
                 return false;
+            }
+        }
+
+        [HarmonyPatch(typeof(RemoteConfigManager), nameof(RemoteConfigManager.CheckIfUserIsDev))]
+		public static class RemoteConfigManager_CheckIfUserIsDev_Patch
+        {
+            public static void Postfix(CSteamID id, ref bool __result)
+            {
+                if (!modEnabled.Value || __result || ComponentManager<Network_Player>.Value == null || ComponentManager<Network_Player>.Value.steamID != id)
+                    return;
+                __result = devEnabled.Value;
             }
         }
         [HarmonyPatch(typeof(PersonController), "Update")]

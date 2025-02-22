@@ -59,14 +59,35 @@ namespace RememberJoinType
                 }
             }
         }
+        [HarmonyPatch(typeof(NewGameBox), nameof(NewGameBox.Button_CreateNewGame))]
+        public static class NewGameBox_Button_CreateNewGame_Patch
+        {
+            public static void Postfix(NewGameBox __instance, Dropdown ___authSettingDropdown)
+            {
+                if (!modEnabled.Value)
+                    return;
+                var path = Path.Combine(AedenthornUtils.GetAssetPath(context, true), SaveAndLoad.CurrentGameFileName);
+                if (File.Exists(path) && Enum.TryParse<RequestJoinAuthSetting>(File.ReadAllText(path), out RequestJoinAuthSetting setting))
+                {
+                    for(int i = 0; i < ___authSettingDropdown.options.Count; i++)
+                    {
+                        ___authSettingDropdown.value = i;
+                        if (__instance.CheckAuthSettingFromDropdown() == setting)
+                        {
+                            return;
+                        }
+                    }
+                }
+            }
+        }
         [HarmonyPatch(typeof(Raft_Network), nameof(Raft_Network.HostGame))]
         public static class Raft_Network_HostGame_Patch
         {
             public static void Prefix(RequestJoinAuthSetting joinAuthSetting)
             {
-                if (!modEnabled.Value || SaveAndLoad.WorldToLoad == null)
+                if (!modEnabled.Value || SaveAndLoad.CurrentGameFileName == null)
                     return;
-                File.WriteAllText(Path.Combine(AedenthornUtils.GetAssetPath(context, true), $"{SaveAndLoad.WorldToLoad.name}"), joinAuthSetting.ToString());
+                File.WriteAllText(Path.Combine(AedenthornUtils.GetAssetPath(context, true), SaveAndLoad.CurrentGameFileName), joinAuthSetting.ToString());
             }
         }
     }
