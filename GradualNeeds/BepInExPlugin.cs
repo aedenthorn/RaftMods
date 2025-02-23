@@ -90,15 +90,21 @@ namespace GradualNeeds
                 var codes = new List<CodeInstruction>(instructions);
                 for (int i = 0; i < codes.Count; i++)
                 {
-                    if (codes[i].opcode == OpCodes.Ldfld && codes[i].operand is FieldInfo && ((FieldInfo)codes[i].operand == AccessTools.Field(typeof(PlayerStats), "vignetteInterval") || (FieldInfo)codes[i].operand == AccessTools.Field(typeof(PlayerStats), "aberationInterval")) && codes[i + 1].operand is FieldInfo && (FieldInfo)codes[i + 1].operand == AccessTools.Field(typeof(Interval<float>), nameof(Interval<float>.maxValue)))
+                    if (codes[i].opcode == OpCodes.Ldfld && codes[i].operand is FieldInfo && (FieldInfo)codes[i].operand == AccessTools.Field(typeof(PlayerStats), "vignetteInterval"))
                     {
-                        Dbgl("adding method to modify ui feedback for thirst / hunger");
-                        codes.Insert(i + 2, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetHungerThirstFeedback))));
+                        Dbgl("adding method to modify vignetteInterval");
+                        codes.Insert(i + 3, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetHungerThirstInterval))));
                         i += 3;
                     }
-                    else if (codes[i].opcode == OpCodes.Ldfld && codes[i].operand is FieldInfo && (FieldInfo)codes[i].operand == AccessTools.Field(typeof(PlayerStats), "saturationInterval") && codes[i + 1].operand is FieldInfo && (FieldInfo)codes[i + 1].operand == AccessTools.Field(typeof(Interval<float>), nameof(Interval<float>.maxValue)))
+                    else if (codes[i].opcode == OpCodes.Ldfld && codes[i].operand is FieldInfo && (FieldInfo)codes[i].operand == AccessTools.Field(typeof(PlayerStats), "aberationInterval") && codes[i + 3].opcode == OpCodes.Call)
                     {
-                        Dbgl("adding method to modify ui feedback for health");
+                        Dbgl("adding method to modify aberationInterval");
+                        codes.Insert(i + 2, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetHungerThirstInterval))));
+                        i += 3;
+                    }
+                    else if (codes[i].opcode == OpCodes.Ldfld && codes[i].operand is FieldInfo && (FieldInfo)codes[i].operand == AccessTools.Field(typeof(PlayerStats), "saturationInterval") && codes[i + 3].opcode == OpCodes.Call)
+                    {
+                        Dbgl("adding method to modify saturationInterval");
                         codes.Insert(i + 2, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetHealthFeedback))));
                         i += 3;
                     }
@@ -109,23 +115,24 @@ namespace GradualNeeds
         }
 
 
-        private static float GetHealthFeedback(float maxValue)
+        private static Interval_Float GetHealthFeedback(Interval_Float value)
         {
             if (!modEnabled.Value)
-                return maxValue;
+                return value;
 
             PlayerStats stats = ComponentManager<Raft_Network>.Value.GetLocalPlayer().Stats;
             if (stats == null)
-                return maxValue;
+                return value;
             var fraction = stats.stat_health.NormalValue / Stat_WellBeing.WellBeingLimit;
-            return maxValue - maxValue * fraction;
+            return new Interval_Float(value.minValue * fraction, value.maxValue * fraction);
         }
 
-        public static float GetHungerThirstFeedback(float maxValue)
+        public static Interval_Float GetHungerThirstInterval(Interval_Float value)
         {
             if (!modEnabled.Value)
-                return maxValue;
-            return maxValue - maxValue * GetStatWellBeingMultiplier(1);
+                return value;
+            var fraction = GetStatWellBeingMultiplier(1);
+            return new Interval_Float(value.minValue * fraction, value.maxValue * fraction);
         }
 
 

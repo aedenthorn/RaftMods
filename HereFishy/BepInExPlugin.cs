@@ -128,7 +128,7 @@ namespace HereFishy
                     fraction += Time.deltaTime;
                     if (nic != null)
                     {
-                        nic.transform.position = Vector3.Lerp(point, player.transform.position, fraction);
+                        nic.transform.position = Vector3.Lerp(point, player.transform.position + new Vector3(0, 0.5f, 0), fraction);
                         nic.transform.position += new Vector3(0, Mathf.Sin(fraction * Mathf.PI), 0);
                     }
                     yield return null;

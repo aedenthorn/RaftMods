@@ -22,6 +22,7 @@ namespace GlobalBatteryCharge
         public static ConfigEntry<bool> isDebug;
         public static ConfigEntry<bool> proportionateCharge;
         public static ConfigEntry<int> batteryChargesPerTick;
+        public static ConfigEntry<float> batteryPerWindturbine;
         public static ConfigEntry<string> interactText;
 
         public static TimerEventer timerEventer = new TimerEventer(15);
@@ -42,8 +43,9 @@ namespace GlobalBatteryCharge
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
             proportionateCharge = Config.Bind<bool>("Options", "ProportionateCharge", true, "Charge supplied is based on how many batteries are being charged.");
-            batteryChargesPerTick = Config.Bind<int>("Options", "BatteryChargesPerTick", 5, "Battery charges per charge");
-            interactText = Config.Bind<string>("Options", "InteractText", "\nEfficiency: {0}\nBatteries: {1}", "Interact text");
+            batteryChargesPerTick = Config.Bind<int>("Options", "BatteryChargesPerTick", 1, "Battery charges per charge");
+            batteryPerWindturbine = Config.Bind<float>("Options", "BatteryPerWindturbine", 1f, "Batteries per turbine for max efficiency");
+            interactText = Config.Bind<string>("Options", "InteractText", "\nEfficiency: {0}%\nBatteries Charging: {1}", "Interact text");
 
             if (!modEnabled.Value)
                 return;
@@ -92,7 +94,7 @@ namespace GlobalBatteryCharge
                 if (battery != null && !battery.BatterySlotIsEmpty && battery.NormalizedBatteryLeft != 1f)
                     batteryCount++;
             }
-            float load = batteryCount / 4f;
+            float load = batteryCount / batteryPerWindturbine.Value;
             currentEfficiency = load == 0 ? 0 : currentEfficiency / load;
         }
 
@@ -114,12 +116,15 @@ namespace GlobalBatteryCharge
         {
             public static void Postfix(Battery __instance, CanvasHelper ___canvas)
 			{
-                if (!modEnabled.Value || __instance.gameObject.GetComponentInParent<WindTurbine>() == null)
+                if (!modEnabled.Value || currentEfficiency == 0)
 					return;
 
                 var dts = (DisplayText[])displayTextsFi.GetValue(___canvas.displayTextManager);
                 var tc = (Text)textComponentFi.GetValue(dts[0]);
-                tc.text += string.Format(interactText.Value, currentEfficiency, batteryCount);
+                if (!string.IsNullOrEmpty(tc.text))
+                {
+                    tc.text += string.Format(interactText.Value, Mathf.RoundToInt(currentEfficiency * 100), batteryCount);
+                }
             }
         }
     }

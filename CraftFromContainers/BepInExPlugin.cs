@@ -19,7 +19,7 @@ namespace CraftFromContainers
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
         public static ConfigEntry<float> range;
-        public static ConfigEntry<string> fuelModKey;
+
         public static bool creatingBlock;
 
         public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = true)
@@ -33,7 +33,6 @@ namespace CraftFromContainers
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
 			range = Config.Bind<float>("General", "Range", -1, "Range in meters; set to negative for no range limit.");
-            fuelModKey = Config.Bind<string>("General", "FuelModKey", "left shift", "Mod key to hold for filling fuel completely");
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
         }
@@ -162,7 +161,11 @@ namespace CraftFromContainers
                 return false;
             }
         }
-		[HarmonyPatch(typeof(Block_CookingStand), nameof(Block_CookingStand.IncrementFuel))]
+
+
+        // fueling
+
+        [HarmonyPatch(typeof(Block_CookingStand), nameof(Block_CookingStand.IncrementFuel))]
 		static class Block_CookingStand_IncrementFuel_Patch
         {
             public static bool Prefix(Block_CookingStand __instance, int incrementAmount, Network_Player player, ref bool __result)
@@ -244,7 +247,7 @@ namespace CraftFromContainers
                     if (codes[i].opcode == OpCodes.Callvirt && (MethodInfo)codes[i].operand == AccessTools.Method(typeof(Inventory), nameof(Inventory.GetItemCount), new Type[] { typeof(Item_Base) }))
                     {
                         Dbgl("adding method to check storages");
-                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetItemCount))));
+                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetFuelItemCount))));
                         codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Fuel), nameof(Fuel.fuelItem))));
                         codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Block_CookingStand), nameof(Block_CookingStand.fuel))));
                         codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldarg_0));
@@ -267,7 +270,7 @@ namespace CraftFromContainers
                     if (codes[i].opcode == OpCodes.Callvirt && (MethodInfo)codes[i].operand == AccessTools.Method(typeof(Inventory), nameof(Inventory.GetItemCount), new Type[] { typeof(Item_Base) }))
                     {
                         Dbgl("adding method to check storages");
-                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetItemCount))));
+                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetFuelItemCount))));
                         codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Fuel), nameof(Fuel.fuelItem))));
                         codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(FuelNetwork), "fuel")));
                         codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldarg_0));
@@ -290,7 +293,7 @@ namespace CraftFromContainers
                     if (codes[i].opcode == OpCodes.Callvirt && codes[i].operand is MethodInfo && (MethodInfo)codes[i].operand == AccessTools.Method(typeof(Inventory), nameof(Inventory.GetItemCount), new Type[] { typeof(Item_Base) }))
                     {
                         Dbgl("adding method to check storages");
-                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetItemCount))));
+                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetFuelItemCount))));
                         codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Tank), "defaultFuelToAdd")));
                         codes.Insert(i + 1, new CodeInstruction(OpCodes.Ldarg_0));
                         i += 3;
@@ -381,7 +384,7 @@ namespace CraftFromContainers
             }
         }
 
-        public static int GetItemCount(int inv, Item_Base fuelItem)
+        public static int GetFuelItemCount(int inv, Item_Base fuelItem)
         {
             if (!modEnabled.Value || inv != 0 || fuelItem is null)
                 return inv;

@@ -1,21 +1,14 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
-using FMODUnity;
 using HarmonyLib;
-using System.Collections.Generic;
-using System.Reflection;
-using UltimateWater;
-using UnityEngine;
-using System.Linq;
-using System.Reflection.Emit;
-using System.Collections;
-using System.IO;
-using UnityEngine.UI;
 using System;
+using System.IO;
+using System.Reflection;
+using UnityEngine.UI;
 
 namespace RememberJoinType
 {
-    [BepInPlugin("aedenthorn.RememberJoinType", "Remember Join Type", "0.1.0")]
+    [BepInPlugin("aedenthorn.RememberJoinType", "Remember Join Type", "0.2.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
