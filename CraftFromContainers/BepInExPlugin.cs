@@ -7,7 +7,6 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
-using static SO_TradingPost_Buyable;
 
 namespace CraftFromContainers
 {
@@ -161,6 +160,73 @@ namespace CraftFromContainers
                 return false;
             }
         }
+
+        // food
+        
+		[HarmonyPatch(typeof(CookingTable), "HandlePickupFood")]
+		static class CookingTable_HandlePickupFood_Patch
+        {
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                Dbgl($"Transpiling CookingTable_HandlePickupFood");
+                var codes = new List<CodeInstruction>(instructions);
+                for (int i = 0; i < codes.Count; i++)
+                {
+                    if (codes[i].opcode == OpCodes.Ldloc_0 && codes[i + 1].opcode == OpCodes.Callvirt && codes[i + 1].operand is MethodInfo && (MethodInfo)codes[i + 1].operand == AccessTools.PropertyGetter(typeof(ItemInstance), nameof(ItemInstance.UniqueIndex)))
+                    {
+                        Dbgl("adding method to check storages");
+                        codes.Insert(i + 2, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetPickupFoodItem))));
+                        codes.Insert(i + 2, new CodeInstruction(OpCodes.Ldarg_0));
+                        break;
+                    }
+                }
+
+                return codes.AsEnumerable();
+            }
+        }
+        private static int GetPickupFoodItem(int index, CookingTable table)
+        {
+            if (!modEnabled.Value)
+                return index;
+            Item_Base pickupFoodItem = AccessTools.FieldRefAccess<CookingTable, Item_Base>(table, "pickupFoodItem");
+            if (index == pickupFoodItem.UniqueIndex)
+                return index;
+            int inv = ComponentManager<Raft_Network>.Value.GetLocalPlayer().Inventory.GetItemCount(pickupFoodItem);
+            if (inv > 0)
+                return pickupFoodItem.UniqueIndex;
+            foreach (var s in GetStorages())
+            {
+                int amount = s.GetInventoryReference().GetItemCount(pickupFoodItem.UniqueName);
+                if (amount > 0)
+                    return pickupFoodItem.UniqueIndex;
+            }
+            return index;
+        }
+
+        [HarmonyPatch(typeof(CookingTable), "PickupFood")]
+        static class CookingTable_PickupFood_Patch
+        {
+            public static void Prefix(CookingTable __instance, Network_Player player, Item_Base ___pickupFoodItem, uint ___finishedPortions)
+            {
+                if (!modEnabled.Value || !player.IsLocalPlayer || ___finishedPortions == 0U || __instance.CurrentRecipe == null || ___pickupFoodItem == null || player.Inventory.GetSelectedHotbarItem().UniqueIndex == ___pickupFoodItem.UniqueIndex)
+                    return;
+                int inv = ComponentManager<Raft_Network>.Value.GetLocalPlayer().Inventory.GetItemCount(___pickupFoodItem);
+                if (inv > 0)
+                    return;
+                foreach (var s in GetStorages())
+                {
+                    int amount = s.GetInventoryReference().GetItemCount(___pickupFoodItem.UniqueName);
+                    if (amount > 0)
+                    {
+                        Dbgl($"Found food container {___pickupFoodItem.UniqueName} in storage");
+                        s.GetInventoryReference().RemoveItem(___pickupFoodItem.UniqueName, 1);
+                        return;
+                    }
+                        
+                }
+            }
+        }
+
 
 
         // fueling

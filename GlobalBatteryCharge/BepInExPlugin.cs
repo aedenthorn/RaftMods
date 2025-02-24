@@ -13,7 +13,7 @@ using UnityEngine.UIElements;
 
 namespace GlobalBatteryCharge
 {
-    [BepInPlugin("aedenthorn.GlobalBatteryCharge", "Global Battery Charge", "0.1.0")]
+    [BepInPlugin("aedenthorn.GlobalBatteryCharge", "Global Battery Charge", "0.2.1")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;

@@ -2,10 +2,11 @@
 using BepInEx.Configuration;
 using HarmonyLib;
 using System.Reflection;
+using UnityEngine;
 
 namespace ReuseBowlsAndGlasses
 {
-    [BepInPlugin("aedenthorn.ReuseBowlsAndGlasses", "Reuse Bowls And Glasses", "0.1.0")]
+    [BepInPlugin("aedenthorn.ReuseBowlsAndGlasses", "Reuse Bowls And Glasses", "0.1.1")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -44,6 +45,11 @@ namespace ReuseBowlsAndGlasses
                     return;
                 }
                 var allRecipes = AccessTools.StaticFieldRefAccess<CookingTable, SO_CookingTable_Recipe[]>("allRecipes");
+                if (allRecipes == null)
+                {
+                    allRecipes = Resources.LoadAll<SO_CookingTable_Recipe>("SO_CookingRecipes");
+                    AccessTools.StaticFieldRefAccess<CookingTable, SO_CookingTable_Recipe[]>("allRecipes") = allRecipes;
+                }
                 foreach (SO_CookingTable_Recipe recipe in allRecipes)
                 {
                     if (recipe.IsValid && recipe.Result.UniqueIndex == __instance.itemInstance.UniqueIndex)

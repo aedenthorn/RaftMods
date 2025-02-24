@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace GradualNeeds
 {
-    [BepInPlugin("aedenthorn.GradualNeeds", "Gradual Needs", "0.1.0")]
+    [BepInPlugin("aedenthorn.GradualNeeds", "Gradual Needs", "0.2.1")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -93,20 +93,20 @@ namespace GradualNeeds
                     if (codes[i].opcode == OpCodes.Ldfld && codes[i].operand is FieldInfo && (FieldInfo)codes[i].operand == AccessTools.Field(typeof(PlayerStats), "vignetteInterval"))
                     {
                         Dbgl("adding method to modify vignetteInterval");
-                        codes.Insert(i + 3, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetHungerThirstInterval))));
-                        i += 3;
+                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetHungerThirstInterval))));
+                        i += 1;
                     }
                     else if (codes[i].opcode == OpCodes.Ldfld && codes[i].operand is FieldInfo && (FieldInfo)codes[i].operand == AccessTools.Field(typeof(PlayerStats), "aberationInterval") && codes[i + 3].opcode == OpCodes.Call)
                     {
                         Dbgl("adding method to modify aberationInterval");
-                        codes.Insert(i + 2, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetHungerThirstInterval))));
-                        i += 3;
+                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetHungerThirstInterval))));
+                        i += 1;
                     }
                     else if (codes[i].opcode == OpCodes.Ldfld && codes[i].operand is FieldInfo && (FieldInfo)codes[i].operand == AccessTools.Field(typeof(PlayerStats), "saturationInterval") && codes[i + 3].opcode == OpCodes.Call)
                     {
                         Dbgl("adding method to modify saturationInterval");
-                        codes.Insert(i + 2, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetHealthFeedback))));
-                        i += 3;
+                        codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetHealthFeedback))));
+                        i += 1;
                     }
                 }
 

@@ -69,6 +69,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReuseBowlsAndGlasses", "Reu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BetterPaintMill", "BetterPaintMill\BetterPaintMill.csproj", "{83A8B7F1-DEE2-5343-C82F-B2587C0AF0F6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TreasureMod", "TreasureMod\TreasureMod.csproj", "{FE397046-47A8-03F3-7061-B554420A3A3C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -207,6 +209,10 @@ Global
 		{83A8B7F1-DEE2-5343-C82F-B2587C0AF0F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{83A8B7F1-DEE2-5343-C82F-B2587C0AF0F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{83A8B7F1-DEE2-5343-C82F-B2587C0AF0F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE397046-47A8-03F3-7061-B554420A3A3C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE397046-47A8-03F3-7061-B554420A3A3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE397046-47A8-03F3-7061-B554420A3A3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE397046-47A8-03F3-7061-B554420A3A3C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
