@@ -25,7 +25,7 @@ namespace QuickStore
         public static ConfigEntry<float> range;
         public static bool suppress;
 
-        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = true)
+        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = false)
         {
             if (isDebug.Value)
                 context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);

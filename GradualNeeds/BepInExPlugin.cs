@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace GradualNeeds
 {
-    [BepInPlugin("aedenthorn.GradualNeeds", "Gradual Needs", "0.2.1")]
+    [BepInPlugin("aedenthorn.GradualNeeds", "Gradual Needs", "0.2.2")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -20,7 +20,13 @@ namespace GradualNeeds
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
         public static ConfigEntry<float> maxSoundInterval;
-        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = true)
+
+        public static float statWellBeingFraction;
+        public static float statHealthFraction;
+        public static float timeAtLastHealthCheck;
+        public static float timeAtLastWellbeingCheck;
+
+        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = false)
         {
             if (isDebug.Value)
                 context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
@@ -33,8 +39,23 @@ namespace GradualNeeds
 			maxSoundInterval = Config.Bind<float>("General", "MaxSoundInterval", 10, "Max sound interval");
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), Info.Metadata.GUID);
+            InvokeRepeating("UpdateFractions", 1, 1);
 
         }
+
+
+        public void UpdateFractions()
+        {
+            if (!modEnabled.Value || ComponentManager<Raft_Network>.Value?.GetLocalPlayer() == null)
+                return;
+
+            PlayerStats stats = ComponentManager<Raft_Network>.Value.GetLocalPlayer().Stats;
+            statHealthFraction = Mathf.Clamp01( stats.stat_health.NormalValue / Stat_WellBeing.WellBeingLimit);
+
+            statWellBeingFraction = Mathf.Clamp01(((stats.stat_thirst.normalConsumable.NormalValue < stats.stat_hunger.normalConsumable.NormalValue) ? stats.stat_thirst.normalConsumable.NormalValue : stats.stat_hunger.normalConsumable.NormalValue) / Stat_WellBeing.WellBeingLimit);
+            //Dbgl($"health {statHealthFraction}, wb {statWellBeingFraction}");
+        }
+
         [HarmonyPatch(typeof(PlayerStats), "HandleSoundFeedback")]
         public static class PlayerStats_HandleSoundFeedback_Patch
         {
@@ -119,20 +140,14 @@ namespace GradualNeeds
         {
             if (!modEnabled.Value)
                 return value;
-
-            PlayerStats stats = ComponentManager<Raft_Network>.Value.GetLocalPlayer().Stats;
-            if (stats == null)
-                return value;
-            var fraction = stats.stat_health.NormalValue / Stat_WellBeing.WellBeingLimit;
-            return new Interval_Float(value.minValue * fraction, value.maxValue * fraction);
+            return new Interval_Float(value.minValue - value.minValue * statHealthFraction, value.maxValue - value.maxValue * statHealthFraction);
         }
 
         public static Interval_Float GetHungerThirstInterval(Interval_Float value)
         {
             if (!modEnabled.Value)
                 return value;
-            var fraction = GetStatWellBeingMultiplier(1);
-            return new Interval_Float(value.minValue * fraction, value.maxValue * fraction);
+            return new Interval_Float(value.minValue - value.minValue * statWellBeingFraction, value.maxValue - value.maxValue * statWellBeingFraction);
         }
 
 
@@ -241,19 +256,16 @@ namespace GradualNeeds
         {
             if (!modEnabled.Value)
                 return multiplier;
-            PlayerStats stats = ComponentManager<Raft_Network>.Value.GetLocalPlayer().Stats;
-            if (stats == null)
-                return multiplier;
-            float fraction = ((stats.stat_thirst.normalConsumable.NormalValue < stats.stat_hunger.normalConsumable.NormalValue) ? stats.stat_thirst.normalConsumable.NormalValue : stats.stat_hunger.normalConsumable.NormalValue) / Stat_WellBeing.WellBeingLimit;
+
             if (multiplier < 1)
             {
-                return multiplier + (fraction * (1 - multiplier));
+                return multiplier + (statWellBeingFraction * (1 - multiplier));
             }
             else if (multiplier == 1)
             {
-                return fraction;
+                return statWellBeingFraction;
             }
-            return multiplier - (fraction * (multiplier - 1));
+            return multiplier - (statWellBeingFraction * (multiplier - 1));
         }
     }
 }

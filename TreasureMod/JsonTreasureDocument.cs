@@ -16,22 +16,12 @@ namespace TreasureMod
 
     public class JsonTreasureObject
     {
-        public float weight = 1f;
-        public JsonRandomItem[] randomItems;
-        public JsonGuaranteedItem[] guaranteedItems;
+        public string itemName;
+        public float weight;
+        public JsonTreasureObject[] randomItems;
+        public JsonTreasureObject[] guaranteedItems;
         public Dictionary<string, JsonTreasureObject> objects;
-        public int minItems;
-        public int maxItems;
-    }
-
-    public class JsonRandomItem
-    {
-        public string itemName;
-        public float weight = 1f;
-    }
-    public class JsonGuaranteedItem
-    {
-        public string itemName;
-        public int amount;
+        public int minItems = 1;
+        public int maxItems = 1;
     }
 }

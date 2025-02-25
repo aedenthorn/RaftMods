@@ -10,7 +10,7 @@ using UnityEngine.UI;
 
 namespace AutoRecipe
 {
-    [BepInPlugin("aedenthorn.AutoRecipe", "Auto Recipe", "0.1.0")]
+    [BepInPlugin("aedenthorn.AutoRecipe", "Auto Recipe", "0.1.1")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -23,7 +23,7 @@ namespace AutoRecipe
 
         public static bool showingInteract = false;
 
-        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = true)
+        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = false)
         {
             if (isDebug.Value)
                 context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
@@ -169,8 +169,22 @@ namespace AutoRecipe
                     Dbgl($"cooking {recipe.Recipe.Result.UniqueName}: {string.Join(", ", station.Slots.Select(s => s.CurrentItem?.UniqueName))}");
 
                     AccessTools.Method(typeof(CookingTable), "HandleStartCooking").Invoke(station, new object[] { });
-                    pi.RemoveCostMultiple(costs.ToArray());
+                    RemoveCostMultiple(pi, costs.ToArray());
                 }
+            }
+        }
+
+        public static void RemoveCostMultiple(Inventory __instance, CostMultiple[] costMultiple)
+        {
+            CostMultiple[] array = new CostMultiple[costMultiple.Length];
+            for (int i = 0; i < costMultiple.Length; i++)
+            {
+                array[i] = new CostMultiple(costMultiple[i].items, costMultiple[i].amount);
+            }
+            __instance.RemoveCostMultiple(array, true);
+            foreach (Storage_Small s in GetStorages())
+            {
+                s.GetInventoryReference().RemoveCostMultiple(array, true);
             }
         }
 

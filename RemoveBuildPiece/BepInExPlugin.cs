@@ -19,7 +19,7 @@ namespace RemoveBuildPiece
         public static ConfigEntry<float> returnPercent;
         public static bool removing = false;
 
-        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = true)
+        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = false)
         {
             if (isDebug.Value)
                 context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);

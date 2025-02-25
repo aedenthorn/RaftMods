@@ -32,7 +32,7 @@ namespace GlobalBatteryCharge
         public static float currentEfficiency;
         public static int batteryCount;
 
-        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = true)
+        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = false)
         {
             if (isDebug.Value)
                 context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
@@ -111,6 +111,10 @@ namespace GlobalBatteryCharge
                 return false;
             }
         }
+
+        public static float timeSinceLastTextUpdate;
+        public static string lastText;
+
         [HarmonyPatch(typeof(Battery), "OnIsRayed")]
 		public static class Battery_OnIsRayed_Patch
         {
@@ -118,12 +122,18 @@ namespace GlobalBatteryCharge
 			{
                 if (!modEnabled.Value || currentEfficiency == 0)
 					return;
+                timeSinceLastTextUpdate += Time.deltaTime;
+                if(timeSinceLastTextUpdate > 0.5f)
+                {
+                    timeSinceLastTextUpdate = 0;
+                    lastText = string.Format(interactText.Value, Mathf.RoundToInt(currentEfficiency * 100), batteryCount);
+                }
 
                 var dts = (DisplayText[])displayTextsFi.GetValue(___canvas.displayTextManager);
                 var tc = (Text)textComponentFi.GetValue(dts[0]);
                 if (!string.IsNullOrEmpty(tc.text))
                 {
-                    tc.text += string.Format(interactText.Value, Mathf.RoundToInt(currentEfficiency * 100), batteryCount);
+                    tc.text += lastText;
                 }
             }
         }

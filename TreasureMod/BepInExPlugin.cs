@@ -5,6 +5,7 @@ using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 
@@ -18,7 +19,7 @@ namespace TreasureMod
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
 
-        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = true)
+        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = false)
         {
             if (isDebug.Value)
                 context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
@@ -89,15 +90,8 @@ namespace TreasureMod
                     };
 
                     var itemList = new List<RandomItem>();
-                    foreach (var o in treasure.randomItems)
-                    {
-                        Dbgl($"\tsetting for item {o.itemName}");
-                        itemList.Add(new RandomItem()
-                        {
-                            obj = o.itemName == null ? null : ItemManager.GetItemByName(o.itemName),
-                            weight = o.weight
-                        });
-                    }
+                    SetItemsRecursive(treasure.randomItems, itemList);
+
                     var asset = AccessTools.FieldRefAccess<RandomDropper, SO_RandomDropper>(pickupNetwork.PickupItem.dropper, "randomDropperAsset");
                     asset.randomizer.items = itemList.ToArray();
                     AccessTools.FieldRefAccess<RandomDropper, SO_RandomDropper>(pickupNetwork.PickupItem.dropper, "randomDropperAsset") = asset;
@@ -113,8 +107,42 @@ namespace TreasureMod
                         pickupNetwork.PickupItem.yieldHandler.yieldAsset.yieldAssets.Add(new Cost()
                         {
                             item = o.itemName == null ? null : ItemManager.GetItemByName(o.itemName),
-                            amount = (int)o.amount
+                            amount = o.minItems
                         });
+                    }
+                }
+            }
+
+            private static void SetItemsRecursive(JsonTreasureObject[] randomItems, List<RandomItem> itemList)
+            {
+                foreach (var o in randomItems)
+                {
+                    if (o.objects == null)
+                    {
+                        Dbgl($"\tsetting for randomizer {o.itemName}");
+                        itemList.Add(new RandomItem()
+                        {
+                            obj = o.itemName == null ? null : ItemManager.GetItemByName(o.itemName),
+                            weight = o.weight
+                        });
+                    }
+                    else
+                    {
+                        Dbgl($"\tsetting for item {o.itemName}");
+                        var rc = new SO_RandomizerCategory()
+                        {
+                            randomizer = new Randomizer()
+                        };
+                        var newItemList = new List<RandomItem>();
+                        SetItemsRecursive(o.objects.Values.ToArray(), newItemList);
+                        rc.randomizer.items = newItemList.ToArray();
+                        var newItem = new RandomItem()
+                        {
+                            obj = rc,
+                            weight = o.weight
+                        };
+                        itemList.Add(newItem);
+
                     }
                 }
             }
@@ -144,7 +172,7 @@ namespace TreasureMod
                         document.landmarks.Add(ts.name, landmark);
                     }
                     GetItemsRecursive(___treasureLootSettings[0].lootTable.items, document.treasures);
-                    File.WriteAllText(filePath, JsonSerializer.Serialize(document, new JsonSerializerOptions { WriteIndented = true, IncludeFields = true }));
+                    File.WriteAllText(filePath, JsonSerializer.Serialize(document, new JsonSerializerOptions { WriteIndented = true, IncludeFields = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull }));
                 }
                 else
                 {
@@ -208,7 +236,7 @@ namespace TreasureMod
                         if(dropper != null)
                         {
                             Dbgl($"Got dropper");
-                            var itemList = new List<JsonRandomItem>();
+                            var itemList = new List<JsonTreasureObject>();
 
                             var interval = AccessTools.FieldRefAccess<RandomDropper, Interval_Int>(dropper, "amountOfItems");
                             obj.minItems = interval.minValue;
@@ -216,12 +244,25 @@ namespace TreasureMod
                             var asset = AccessTools.FieldRefAccess<RandomDropper, SO_RandomDropper>(dropper, "randomDropperAsset");
                             foreach (var o in asset.randomizer.items)
                             {
-                                Dbgl($"Got item {(o.obj as Item_Base)?.UniqueName}");
-                                itemList.Add(new JsonRandomItem()
+                                if(o.obj is Item_Base || o.obj is null)
                                 {
-                                    itemName = (o.obj as Item_Base)?.UniqueName,
-                                    weight = o.weight
-                                });
+                                    Dbgl($"\tGot item {(o.obj as Item_Base)?.UniqueName}");
+                                    itemList.Add(new JsonTreasureObject()
+                                    {
+                                        itemName = (o.obj as Item_Base)?.UniqueName,
+                                        weight = o.weight
+                                    });
+                                }
+                                else if(o.obj is SO_RandomizerCategory)
+                                {
+                                    var newObj = new JsonTreasureObject()
+                                    {
+                                        weight = o.weight,
+                                        objects = new Dictionary<string, JsonTreasureObject>()
+                                    };
+                                    GetItemsRecursive((o.obj as SO_RandomizerCategory).randomizer.items, newObj.objects);
+                                    itemList.Add(newObj);
+                                }
                             }
                             obj.randomItems = itemList.ToArray();
 
@@ -229,28 +270,43 @@ namespace TreasureMod
                         if ((i.obj as TreasurePoint).pickupNetworked.PickupItem.yieldHandler?.yieldAsset?.yieldAssets?.Count > 0)
                         {
                             Dbgl($"Got yieldHandler");
-                            var itemList = new List<JsonGuaranteedItem>();
+                            var itemList = new List<JsonTreasureObject>();
 
                             foreach (var item in (i.obj as TreasurePoint).pickupNetworked.PickupItem.yieldHandler?.yieldAsset?.yieldAssets)
                             {
-                                Dbgl($"Got item {item.item.UniqueName}");
+                                Dbgl($"\tGot item {item.item.UniqueName}");
 
-                                itemList.Add(new JsonGuaranteedItem()
+                                itemList.Add(new JsonTreasureObject()
                                 {
                                     itemName = item.item.UniqueName,
-                                    amount = item.amount
+                                    minItems = item.amount,
+                                    maxItems = item.amount
                                 });
                             }
                             obj.guaranteedItems = itemList.ToArray();
                         }
+                        objects.Add(i.obj.name, obj);
+                    }
+                    else if(i.obj == null || typeof(Item_Base).IsAssignableFrom(i.obj.GetType()))
+                    {
+                        Dbgl($"Got item base {(i.obj as Item_Base).UniqueName}");
+                        obj.itemName = (i.obj as Item_Base).UniqueName;
+                        objects.Add((i.obj as Item_Base).UniqueName, obj);
+
                     }
                     else if (i.obj is SO_RandomizerCategory)
                     {
                         Dbgl($"Got randomizer");
                         obj.objects = new Dictionary<string, JsonTreasureObject>();
                         GetItemsRecursive((i.obj as SO_RandomizerCategory).randomizer.items, obj.objects);
+                        objects.Add(i.obj.name, obj);
                     }
-                    objects.Add(i.obj.name, obj);
+                    else
+                    {
+                        Dbgl($"Got unknown type {i.obj.GetType()}");
+
+                        continue;
+                    }
                 }
             }
         }

@@ -8,7 +8,9 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
+using UnityEngine.UI;
 using static Pomp.Animation.AnimationParameterController.AnimationParamData;
+using static SO_TradingPost_Buyable;
 
 namespace EnableCheats
 {
@@ -24,7 +26,9 @@ namespace EnableCheats
         public static ConfigEntry<bool> devEnabled;
         public static ConfigEntry<KeyCode> cheatSprintKey;
 
-        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = true)
+        public static Dictionary<string, ChatWord> chatWords = new Dictionary<string, ChatWord>();
+
+        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = false)
         {
             if (isDebug.Value)
                 context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
@@ -45,7 +49,10 @@ namespace EnableCheats
                 return;
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
-
+            foreach(var i in Enum.GetNames(typeof(QuestType)))
+            {
+                ChatWordLibrary.chatWords["quest"].chatWords[i] = new ChatWord();
+            }
         }
 
         private void CheatKeysEnabled_SettingChanged(object sender, EventArgs e)
@@ -53,13 +60,152 @@ namespace EnableCheats
             Cheat.UseCheats = cheatKeysEnabled.Value;
         }
 
-        //[HarmonyPatch(typeof(ItemManager), "LoadAllItems")]
-        public static class LoadAllItemsPatch
+        [HarmonyPatch(typeof(ItemManager), "LoadAllItems")]
+        public static class ItemManager_LoadAllItems_Patch
         {
             public static void Postfix(List<Item_Base> ___allAvailableItems)
             {
-                Dbgl(string.Join("\n", ___allAvailableItems.Select(i => i.UniqueName)));
+                ChatWordLibrary.chatWords["give"].chatWords = new Dictionary<string, ChatWord>();
+                var keys = ___allAvailableItems.Select(i => i.UniqueName).ToList();
+                keys.Sort();
+                foreach (var i in keys)
+                {
+                    ChatWordLibrary.chatWords["give"].chatWords[i] = new ChatWord();
+                }
+            }
+        }
+        [HarmonyPatch(typeof(RareMaterial), "Awake")]
+        public static class RareMaterial_Awake_Patch
+        {
+            public static void Postfix(Randomizer ___randomizer)
+            {
+                ChatWordLibrary.chatWords["animals"].chatWords["changematerial"].chatWords = new Dictionary<string, ChatWord>();
+                var mats = ___randomizer.GetAllItems<Material>();
+                
+                foreach (var m in mats)
+                {
+                    var i = ___randomizer.GetIndexFromItem(m);
+                    ChatWordLibrary.chatWords["animals"].chatWords["changematerial"].chatWords[i.ToString()] = new ChatWord();
+                }
+            }
+        }
+        [HarmonyPatch(typeof(CookingTable), "RetrieveAllRecipes")]
+        public static class CookingTable_RetrieveAllRecipes_Patch
+        {
+            public static void Postfix(SO_CookingTable_Recipe[] ___allRecipes)
+            {
+                ChatWordLibrary.chatWords["cook"].chatWords = new Dictionary<string, ChatWord>();
+                var keys = ___allRecipes.Select(i => i.Result.UniqueName).ToList();
+                keys.Sort();
+                foreach (var i in keys)
+                {
+                    ChatWordLibrary.chatWords["cook"].chatWords[i] = new ChatWord();
+                }
+            }
+        }
+        [HarmonyPatch(typeof(WeatherManager), "Start")]
+        public static class WeatherManager_Start_Patch
+        {
+            public static void Postfix(List<WeatherPool> ___weatherPools)
+            {
+                ChatWordLibrary.chatWords["weather"].chatWords = new Dictionary<string, ChatWord>();
+                List<string> keys = new List<string>();
+                foreach (WeatherPool weatherPool in ___weatherPools)
+                {
+                    Weather[] allItems = weatherPool.randomizer.GetAllItems<Weather>();
+                    if (allItems != null)
+                    {
+                        keys.AddRange(allItems.Select(w => w.name));
+                    }
+                }
+                keys.Sort();
+                foreach (var i in keys)
+                {
+                    ChatWordLibrary.chatWords["weather"].chatWords[i] = new ChatWord()
+                    {
+                        chatWords = new Dictionary<string, ChatWord>()
+                        {
+                            { "lerp", new ChatWord() }
+                        }
+                    };
+                }
+            }
+        }
+        public static InputField hintField;
 
+        [HarmonyPatch(typeof(ChatTextFieldController), "Awake")]
+        public static class ChatTextFieldController_Awake_Patch
+        {
+            public static void Postfix(ChatTextFieldController __instance)
+            {
+                if (!modEnabled.Value)
+                    return;
+                hintField = Instantiate(__instance.chatInputField, __instance.chatInputField.transform.parent);
+                hintField.textComponent.color = Color.grey;
+                __instance.chatInputField.transform.SetAsLastSibling();
+                Destroy(__instance.chatInputField.GetComponent<Image>());
+            }
+        }
+
+        public static string lastText = "";
+
+        [HarmonyPatch(typeof(ChatTextFieldController), "HandleInput")]
+        public static class ChatTextFieldController_HandleInput_Patch
+        {
+            public static void Postfix(ChatTextFieldController __instance)
+            {
+                if (!modEnabled.Value )
+                    return;
+                hintField.gameObject.SetActive(__instance.chatInputField.isActiveAndEnabled);
+
+                var text = __instance.chatInputField.text;
+                if (!text.StartsWith("/") || text == lastText)
+                {
+                    if (hintField.text.Length >= text.Length && Input.GetKeyDown(KeyCode.Tab))
+                    {
+                        __instance.chatInputField.text = hintField.text;
+                        __instance.chatInputField.caretPosition = __instance.chatInputField.text.Length;
+                        lastText = __instance.chatInputField.text;
+                    }
+                    return;
+                }
+                hintField.text = "";
+                lastText = text;
+                var words = text.Substring(1).Split(' ');
+                var hints = new List<string>();
+                var dict = ChatWordLibrary.chatWords;
+                for (int i = 0; i < words.Length; i++)
+                {
+                    if (words[i].Length == 0)
+                    {
+                        break;
+                    }
+                    foreach (var hint in dict.Keys)
+                    {
+                        if (hint.ToLower().Equals(words[i].ToLower()))
+                        {
+                            hints.Add(hint);
+                            dict = dict[hint].chatWords;
+                            goto next;
+                        }
+                    }
+                    foreach (var hint in dict.Keys)
+                    {
+                        if (hint.ToLower().StartsWith(words[i].ToLower()))
+                        {
+                            hints.Add(hint);
+                            goto breakout;
+                        }
+                    }
+                    break;
+                next:
+                    continue;
+                }
+            breakout:
+                if(hints.Count > 0)
+                {
+                    hintField.text = "/"+string.Join(" ", hints);
+                }
             }
         }
         
