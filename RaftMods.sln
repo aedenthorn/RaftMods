@@ -71,6 +71,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BetterPaintMill", "BetterPa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TreasureMod", "TreasureMod\TreasureMod.csproj", "{FE397046-47A8-03F3-7061-B554420A3A3C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlockShift", "BlockShift\BlockShift.csproj", "{0F1E61D9-1792-F593-0785-DA5C7C7EF97A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -213,6 +215,10 @@ Global
 		{FE397046-47A8-03F3-7061-B554420A3A3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE397046-47A8-03F3-7061-B554420A3A3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FE397046-47A8-03F3-7061-B554420A3A3C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F1E61D9-1792-F593-0785-DA5C7C7EF97A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F1E61D9-1792-F593-0785-DA5C7C7EF97A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F1E61D9-1792-F593-0785-DA5C7C7EF97A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F1E61D9-1792-F593-0785-DA5C7C7EF97A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
