@@ -9,12 +9,10 @@ using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
 using UnityEngine.UI;
-using static Pomp.Animation.AnimationParameterController.AnimationParamData;
-using static SO_TradingPost_Buyable;
 
 namespace EnableCheats
 {
-    [BepInPlugin("aedenthorn.EnableCheats", "Enable Cheats", "0.1.0")]
+    [BepInPlugin("aedenthorn.EnableCheats", "Enable Cheats", "0.2.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;

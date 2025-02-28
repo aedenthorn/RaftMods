@@ -110,17 +110,30 @@ namespace BlockShift
 
                 }
                 Dbgl($"shifting by {shift}");
+
                 foreach (Transform e in SingletonGeneric<GameManager>.Singleton.lockedPivot)
                 {
-                    e.localPosition += shift;
-                    Block block = e.GetComponent<Block>();
-                    if (block != null){
-                        BlockCreator.PlaceBlockCallStack(block, null, true, -1);
+                    if (e.GetComponent<Block>() != null)
+                        continue;
+                    if(e.GetComponent<Light>() != null || e.GetComponent<Network_Entity>() != null)
+                    {
+                        e.localPosition += shift;
                     }
                 }
+                ComponentManager<RaftBounds>.Value.ClearWalkableBlocks();
+                AccessTools.FieldRefAccess<RaftCollisionManager, List<Vector3>>(ComponentManager<RaftCollisionManager>.Value, "blocks").Clear();
                 for (int i = 0; i < placedBlocks.Count; i++)
                 {
+                    placedBlocks[i].transform.localPosition += shift;
+                    if (placedBlocks[i].blockColliders.Length != 0)
+                    {
+                        ComponentManager<BlockCollisionConsolidator>.Value.RemoveBlock(placedBlocks[i]);
+                        ComponentManager<BlockCollisionConsolidator>.Value.AddBlock(placedBlocks[i]);
+                    }
+                    BlockCreator.PlaceBlockCallStack(placedBlocks[i], null, true, -1);
                 }
+                ComponentManager<RaftBounds>.Value.Initialize();
+                ComponentManager<RaftCollisionManager>.Value.Initialize();
             }
         }
     }
