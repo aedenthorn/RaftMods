@@ -12,7 +12,7 @@ using UnityEngine.UI;
 
 namespace EnableCheats
 {
-    [BepInPlugin("aedenthorn.EnableCheats", "Enable Cheats", "0.2.0")]
+    [BepInPlugin("aedenthorn.EnableCheats", "Enable Cheats", "0.3.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -240,6 +240,27 @@ namespace EnableCheats
                 if (!modEnabled.Value || __result || ComponentManager<Network_Player>.Value == null || ComponentManager<Network_Player>.Value.steamID != id)
                     return;
                 __result = devEnabled.Value;
+            }
+        }
+        [HarmonyPatch(typeof(Cheat), "Give")]
+        static class Cheat_Give_Patch
+        {
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                Dbgl($"Transpiling Cheat_Give");
+                var codes = new List<CodeInstruction>(instructions);
+                for (int i = 0; i < codes.Count; i++)
+                {
+                    if (codes[i].opcode == OpCodes.Call && codes[i].operand is MethodInfo && (MethodInfo)codes[i].operand == AccessTools.Method(typeof(ItemManager), nameof(ItemManager.GetItemByNameContains)))
+                    {
+                        Dbgl("Changing method to get exact match item");
+                        codes[i].operand = AccessTools.Method(typeof(ItemManager), nameof(ItemManager.GetItemByName));
+                        codes.RemoveAt(i - 1);
+                        break;
+                    }
+                }
+
+                return codes.AsEnumerable();
             }
         }
         [HarmonyPatch(typeof(PersonController), "Update")]
