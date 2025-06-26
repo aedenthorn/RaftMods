@@ -1,6 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
+using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,7 @@ using UnityEngine;
 
 namespace QuickStore
 {
-    [BepInPlugin("aedenthorn.QuickStore", "Quick Store", "0.2.0")]
+    [BepInPlugin("aedenthorn.QuickStore", "Quick Store", "0.3.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -53,6 +54,7 @@ namespace QuickStore
             {
                 Dbgl("Quick store");
                 var disallowedList = disallowedItems.Value.Split(',').ToList();
+                var player = ComponentManager<Raft_Network>.Value.GetLocalPlayer();
                 var pi = ComponentManager<PlayerInventory>.Value;
                 InventoryPickup ip = AccessTools.FieldRefAccess<PlayerInventory, InventoryPickup>(pi, "inventoryPickup");
                 foreach (var slot in pi.allSlots)
@@ -63,7 +65,7 @@ namespace QuickStore
                     int originalAmount = slot.itemInstance.Amount;
                     foreach (Storage_Small s in StorageManager.allStorages)
                     {
-                        if (range.Value >= 0 && Vector3.Distance(ComponentManager<Raft_Network>.Value.GetLocalPlayer().transform.position, s.transform.position) > range.Value)
+                        if (s.IsOpen || range.Value >= 0 && Vector3.Distance(ComponentManager<Raft_Network>.Value.GetLocalPlayer().transform.position, s.transform.position) > range.Value)
                             continue;
                         var found = s.GetInventoryReference().GetItemCount(slotName);
                         if (found > 0)
@@ -84,6 +86,7 @@ namespace QuickStore
                             {
                                 slot.RefreshComponents();
                             }
+                            player.Network.RPC(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
                         }
                     }
                     if (slot.itemInstance is null || slot.itemInstance.Amount < originalAmount)
@@ -145,7 +148,7 @@ namespace QuickStore
                                 Dbgl($"Trying to store from net: {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{remain}");
                                 foreach (Storage_Small s in StorageManager.allStorages)
                                 {
-                                    if (range.Value >= 0 && Vector3.Distance(ic.transform.position, s.transform.position) > range.Value)
+                                    if (s.IsOpen || range.Value >= 0 && Vector3.Distance(ic.transform.position, s.transform.position) > range.Value)
                                         continue;
                                     if (s.GetInventoryReference().GetItemCount(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName) > 0)
                                     {
@@ -155,6 +158,7 @@ namespace QuickStore
                                             ip.ShowItem(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName, remain - newRemain);
                                             Dbgl($"\tStored {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{remain - newRemain} from collector net, remain: {newRemain}/{pin.PickupItem.yieldHandler.Yield[i].amount}");
                                             remain = newRemain;
+                                            player.Network.RPC(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
                                         }
                                     }
                                 }
@@ -209,7 +213,7 @@ namespace QuickStore
                                     int remain = pns[i].PickupItem.yieldHandler.Yield[j].amount;
                                     foreach (Storage_Small s in StorageManager.allStorages)
                                     {
-                                        if (range.Value >= 0 && Vector3.Distance(pns[i].transform.position, s.transform.position) > range.Value)
+                                        if (s.IsOpen || range.Value >= 0 && Vector3.Distance(pns[i].transform.position, s.transform.position) > range.Value)
                                             continue;
                                         if (s.GetInventoryReference().GetItemCount(pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName) > 0)
                                         {
@@ -220,6 +224,7 @@ namespace QuickStore
                                                 Dbgl($"Stored Egg, remain: {newRemain}/{pns[i].PickupItem.yieldHandler.Yield[j].amount}");
                                                 remain = newRemain;
                                             }
+                                            player.Network.RPC(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
                                         }
                                     }
                                     if (remain != pns[i].PickupItem.yieldHandler.Yield[j].amount)
