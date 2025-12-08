@@ -1,6 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -15,10 +16,10 @@ namespace ReuseBowlsAndGlasses
         public static ConfigEntry<bool> isDebug;
 
 
-        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = false)
+        public static void Dbgl(object obj, BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug)
         {
             if (isDebug.Value)
-                context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
+                context.Logger.Log(level, obj);
         }
         public void Awake()
         {
@@ -57,6 +58,11 @@ namespace ReuseBowlsAndGlasses
                         ComponentManager<Network_Player>.Value.Inventory.AddItem(recipe.RecipeType == CookingRecipeType.CookingPot ? "Claybowl_Empty" : "DrinkingGlass", 1);
                         return;
                     }
+                }
+                if (__instance.itemInstance.settings_recipe?.NewCost?.ToList().Exists(c => c.items.ToList().Exists(i => i.UniqueName == "Bucket")) == true)
+                {
+                    Dbgl($"returning bucket");
+                    ComponentManager<Network_Player>.Value.Inventory.AddItem("Bucket", 1);
                 }
             }
         }

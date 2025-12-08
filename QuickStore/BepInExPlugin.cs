@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace QuickStore
 {
-    [BepInPlugin("aedenthorn.QuickStore", "Quick Store", "0.3.0")]
+    [BepInPlugin("aedenthorn.QuickStore", "Quick Store", "0.3.1")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -86,7 +86,14 @@ namespace QuickStore
                             {
                                 slot.RefreshComponents();
                             }
-                            player.Network.RPC(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                            if (Raft_Network.IsHost)
+                            {
+                                player.Network.RPC(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                            }
+                            else
+                            {
+                                player.SendP2P(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                            }
                         }
                     }
                     if (slot.itemInstance is null || slot.itemInstance.Amount < originalAmount)
@@ -158,7 +165,15 @@ namespace QuickStore
                                             ip.ShowItem(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName, remain - newRemain);
                                             Dbgl($"\tStored {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{remain - newRemain} from collector net, remain: {newRemain}/{pin.PickupItem.yieldHandler.Yield[i].amount}");
                                             remain = newRemain;
-                                            player.Network.RPC(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                                            if (Raft_Network.IsHost)
+                                            {
+                                                player.Network.RPC(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                                            }
+                                            else
+                                            {
+                                                player.SendP2P(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                                            }
+
                                         }
                                     }
                                 }
@@ -224,7 +239,15 @@ namespace QuickStore
                                                 Dbgl($"Stored Egg, remain: {newRemain}/{pns[i].PickupItem.yieldHandler.Yield[j].amount}");
                                                 remain = newRemain;
                                             }
-                                            player.Network.RPC(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                                            if (Raft_Network.IsHost)
+                                            {
+                                                player.Network.RPC(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                                            }
+                                            else
+                                            {
+                                                player.SendP2P(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                                            }
+
                                         }
                                     }
                                     if (remain != pns[i].PickupItem.yieldHandler.Yield[j].amount)

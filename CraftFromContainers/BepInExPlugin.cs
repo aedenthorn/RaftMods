@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace CraftFromContainers
 {
-    [BepInPlugin("aedenthorn.CraftFromContainers", "Craft From Containers", "0.4.1")]
+    [BepInPlugin("aedenthorn.CraftFromContainers", "Craft From Containers", "0.4.2")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -75,6 +75,10 @@ namespace CraftFromContainers
                 array[i] = new CostMultiple(costMultiple[i].items, costMultiple[i].amount);
             }
             __instance.RemoveCostMultiple(array, true);
+            foreach(var  item in array)
+            {
+                Dbgl($"Remain {item.amount} {string.Join(", ", item.items.Select(i => i.UniqueName))}");
+            }
             foreach (Storage_Small s in GetStorages())
             {
                 s.GetInventoryReference().RemoveCostMultiple(array, true);
@@ -125,14 +129,31 @@ namespace CraftFromContainers
                 creatingBlock = false;
             }
         }
+		[HarmonyPatch(typeof(Hammer), nameof(Hammer.ReinforceBlock))]
+		static class Hammer_ReinforceBlock_Patch
+        {
+            public static void Prefix()
+            {
+                if (!modEnabled.Value)
+                    return;
+                creatingBlock = true;
+            }
+            public static void Postfix()
+            {
+                if (!modEnabled.Value)
+                    return;
+                creatingBlock = false;
+            }
+        }
 		[HarmonyPatch(typeof(Inventory), nameof(Inventory.RemoveCostMultiple))]
 		static class Inventory_RemoveCostMultiple_Patch
         {
             public static bool Prefix(Inventory __instance, CostMultiple[] costMultiple)
             {
+                Dbgl("Removing cost multiple");
                 if (!modEnabled.Value || !creatingBlock)
                     return true;
-                Dbgl("Removing cost multiple");
+                Dbgl("override");
                 creatingBlock = false;
                 RemoveCostMultiple(__instance, costMultiple);
                 return false;

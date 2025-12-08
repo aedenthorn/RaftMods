@@ -247,7 +247,7 @@ namespace GradualNeeds
 
         public static float GetGroundSpeedMultiplier(float multiplier, PersonController pc)
         {
-            if(pc.crouching) 
+            if(!modEnabled.Value || pc.crouching) 
                 return multiplier;
             return GetStatWellBeingMultiplier(multiplier);
         }

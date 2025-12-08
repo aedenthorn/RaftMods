@@ -62,57 +62,8 @@ namespace Durability
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
         }
 
-
-		[HarmonyPatch(typeof(ItemInstance), new Type[] {typeof(Item_Base), typeof(int), typeof(int), typeof(string) })]
-		[HarmonyPatch(MethodType.Constructor)]
-		public static class ItemInstance_Patch
-		{
-			public static void Postfix(Item_Base itemBase, ref int uses, ItemInstance __instance)
-			{
-
-                if (!modEnabled.Value || uses <= 1)
-                    return;
-                float mult = 1;
-                if (specials.TryGetValue(itemBase.UniqueName, out mult))
-                {
-
-                }
-                else if (itemBase.settings_consumeable.FoodType > FoodType.None)
-                {
-                    switch (itemBase.settings_consumeable.FoodType)
-                    {
-                        case FoodType.Food:
-                            mult = foodDurabilityMultiplier.Value;
-                            break;
-                        case FoodType.Water:
-                        case FoodType.SaltWater:
-                            mult = fluidDurabilityMultiplier.Value;
-                            break;
-                    }
-                    //Dbgl($"consumable {__instance.UniqueName}; durability {__result}x{mult}");
-                }
-                else if (itemBase.settings_usable.IsUsable())
-                {
-                    mult = usableDurabilityMultiplier.Value;
-                    //Dbgl($"tool {__instance.UniqueName}; durability {__result}x{mult}");
-                }
-                else if (itemBase.settings_equipment.EquipType > EquipSlotType.None)
-                {
-                    mult = equipmentDurabilityMultiplier.Value;
-                    //Dbgl($"equipment {__instance.UniqueName}; durability {__result}x{mult}");
-                }
-                else
-                {
-                    mult = otherDurabilityMultiplier.Value;
-                }
-                //Dbgl($"get {__instance.UniqueName} uses from {__instance.Uses}/{__instance.BaseItemMaxUses}");
-                AccessTools.FieldRefAccess<Item_Base, int>(__instance.baseItem, "maxUses") = Mathf.CeilToInt(AccessTools.FieldRefAccess<Item_Base, int>(__instance.baseItem, "maxUses") * mult);
-                //__instance.Uses = Mathf.CeilToInt(uses * mult);
-                //Dbgl($"set {__instance.UniqueName} uses to {__instance.Uses}/{__instance.BaseItemMaxUses}");
-            }
-        }
-		//[HarmonyPatch(typeof(Item_Base), nameof(Item_Base.MaxUses))]
-		//[HarmonyPatch(MethodType.Getter)]
+		[HarmonyPatch(typeof(Item_Base), nameof(Item_Base.MaxUses))]
+		[HarmonyPatch(MethodType.Getter)]
 		public static class Item_Base_MaxUses_Getter_Patch
 		{
             public static void Postfix(Item_Base __instance, ref int __result)
