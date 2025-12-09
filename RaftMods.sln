@@ -73,6 +73,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TreasureMod", "TreasureMod\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlockShift", "BlockShift\BlockShift.csproj", "{0F1E61D9-1792-F593-0785-DA5C7C7EF97A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RepairItems", "RepairItems\RepairItems.csproj", "{FBD3B12B-35E0-0FAD-8403-2D165BD9A775}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -219,6 +221,10 @@ Global
 		{0F1E61D9-1792-F593-0785-DA5C7C7EF97A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0F1E61D9-1792-F593-0785-DA5C7C7EF97A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0F1E61D9-1792-F593-0785-DA5C7C7EF97A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FBD3B12B-35E0-0FAD-8403-2D165BD9A775}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FBD3B12B-35E0-0FAD-8403-2D165BD9A775}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FBD3B12B-35E0-0FAD-8403-2D165BD9A775}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FBD3B12B-35E0-0FAD-8403-2D165BD9A775}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

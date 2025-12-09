@@ -23,10 +23,10 @@ namespace Speed
         public static ConfigEntry<double> swimSpeedMult;
         public static ConfigEntry<double> moveSpeedMult;
 
-        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = false)
+        public static void Dbgl(object obj, BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug)
         {
             if (isDebug.Value)
-                context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
+                context.Logger.Log(level, obj);
         }
         public void Awake()
         {

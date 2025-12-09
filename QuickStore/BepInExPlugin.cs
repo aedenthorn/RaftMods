@@ -216,70 +216,74 @@ namespace QuickStore
                 }
                 if (storeEggs.Value)
                 {
-                    var pns = SingletonGeneric<GameManager>.Singleton.lockedPivot.gameObject.GetComponentsInChildren<PickupItem_Networked>();
-                    for(int i = 0; i < pns.Length; i++)
+                    var pns = SingletonGeneric<GameManager>.Singleton?.lockedPivot?.gameObject?.GetComponentsInChildren<PickupItem_Networked>();
+                    if(pns != null)
                     {
-                        if (pns[i].PickupItem.yieldHandler != null && pns[i].PickupItem.yieldHandler.Yield.Any())
-                        {
-                            for (int j = 0; j < pns[i].PickupItem.yieldHandler.Yield.Count; j++)
-                            {
-                                if (pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName == "Egg")
-                                {
-                                    int remain = pns[i].PickupItem.yieldHandler.Yield[j].amount;
-                                    foreach (Storage_Small s in StorageManager.allStorages)
-                                    {
-                                        if (s.IsOpen || range.Value >= 0 && Vector3.Distance(pns[i].transform.position, s.transform.position) > range.Value)
-                                            continue;
-                                        if (s.GetInventoryReference().GetItemCount(pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName) > 0)
-                                        {
-                                            var newRemain = s.GetInventoryReference().AddItem(pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName, remain);
-                                            if (newRemain != remain)
-                                            {
-                                                ip.ShowItem(pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName, remain - newRemain);
-                                                Dbgl($"Stored Egg, remain: {newRemain}/{pns[i].PickupItem.yieldHandler.Yield[j].amount}");
-                                                remain = newRemain;
-                                            }
-                                            if (Raft_Network.IsHost)
-                                            {
-                                                player.Network.RPC(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
-                                            }
-                                            else
-                                            {
-                                                player.SendP2P(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
-                                            }
 
-                                        }
-                                    }
-                                    if (remain != pns[i].PickupItem.yieldHandler.Yield[j].amount)
+                        for (int i = 0; i < pns.Length; i++)
+                        {
+                            if (pns[i]?.PickupItem?.yieldHandler != null && pns[i].PickupItem.yieldHandler.Yield.Any())
+                            {
+                                for (int j = 0; j < pns[i].PickupItem.yieldHandler.Yield.Count; j++)
+                                {
+                                    if (pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName == "Egg")
                                     {
-                                        Collider[] componentsInChildren = pns[i].GetComponentsInChildren<Collider>();
-                                        if (componentsInChildren != null)
+                                        int remain = pns[i].PickupItem.yieldHandler.Yield[j].amount;
+                                        foreach (Storage_Small s in StorageManager.allStorages)
                                         {
-                                            foreach (Collider collider in componentsInChildren)
+                                            if (s.IsOpen || range.Value >= 0 && Vector3.Distance(pns[i].transform.position, s.transform.position) > range.Value)
+                                                continue;
+                                            if (s.GetInventoryReference().GetItemCount(pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName) > 0)
                                             {
-                                                if (!(collider == null))
+                                                var newRemain = s.GetInventoryReference().AddItem(pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName, remain);
+                                                if (newRemain != remain)
                                                 {
-                                                    collider.enabled = true;
+                                                    ip.ShowItem(pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName, remain - newRemain);
+                                                    Dbgl($"Stored Egg, remain: {newRemain}/{pns[i].PickupItem.yieldHandler.Yield[j].amount}");
+                                                    remain = newRemain;
+                                                }
+                                                if (Raft_Network.IsHost)
+                                                {
+                                                    player.Network.RPC(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                                                }
+                                                else
+                                                {
+                                                    player.SendP2P(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                                                }
+
+                                            }
+                                        }
+                                        if (remain != pns[i].PickupItem.yieldHandler.Yield[j].amount)
+                                        {
+                                            Collider[] componentsInChildren = pns[i].GetComponentsInChildren<Collider>();
+                                            if (componentsInChildren != null)
+                                            {
+                                                foreach (Collider collider in componentsInChildren)
+                                                {
+                                                    if (!(collider == null))
+                                                    {
+                                                        collider.enabled = true;
+                                                    }
                                                 }
                                             }
-                                        }
-                                        WaterFloatSemih2 component = pns[i].GetComponent<WaterFloatSemih2>();
-                                        if (component != null)
-                                        {
-                                            component.enabled = true;
-                                        }
-                                        if (remain != 0)
-                                        {
-                                            Dbgl($"\tSending {pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName} x{remain} left over to player inventory");
+                                            WaterFloatSemih2 component = pns[i].GetComponent<WaterFloatSemih2>();
+                                            if (component != null)
+                                            {
+                                                component.enabled = true;
+                                            }
+                                            if (remain != 0)
+                                            {
+                                                Dbgl($"\tSending {pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName} x{remain} left over to player inventory");
 
-                                            pi.AddItem(pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName, remain);
+                                                pi.AddItem(pns[i].PickupItem.yieldHandler.Yield[j].item.UniqueName, remain);
+                                            }
+                                            PickupObjectManager.RemovePickupItem(pns[i]);
+                                            break;
                                         }
-                                        PickupObjectManager.RemovePickupItem(pns[i]);
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        Dbgl($"\tall remain, skipping");
+                                        else
+                                        {
+                                            Dbgl($"\tall remain, skipping");
+                                        }
                                     }
                                 }
                             }

@@ -20,10 +20,10 @@ namespace DisableAutoSave
         public static ConfigEntry<bool> saveEnabled;
         public static ConfigEntry<string> hotkey;
 
-        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = false)
+        public static void Dbgl(object obj, BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug)
         {
             if (isDebug.Value)
-                context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
+                context.Logger.Log(level, obj);
         }
         public void Awake()
         {
@@ -31,7 +31,7 @@ namespace DisableAutoSave
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
             saveEnabled = Config.Bind<bool>("General", "SaveEnabled", true, "Enable saving");
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
-			hotkey = Config.Bind<string>("Options", "Hotkey", "end", "Hotkey to trigger quick store");
+			hotkey = Config.Bind<string>("Options", "Hotkey", "end", "Hotkey to toggle saving");
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
         }

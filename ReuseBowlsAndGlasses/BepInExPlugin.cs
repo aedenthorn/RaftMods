@@ -59,11 +59,6 @@ namespace ReuseBowlsAndGlasses
                         return;
                     }
                 }
-                if (__instance.itemInstance.settings_recipe?.NewCost?.ToList().Exists(c => c.items.ToList().Exists(i => i.UniqueName == "Bucket")) == true)
-                {
-                    Dbgl($"returning bucket");
-                    ComponentManager<Network_Player>.Value.Inventory.AddItem("Bucket", 1);
-                }
             }
         }
     }
