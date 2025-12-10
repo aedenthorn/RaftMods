@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
+using static SO_TradingPost_Buyable;
 
 namespace QuickStore
 {
@@ -21,6 +22,7 @@ namespace QuickStore
         public static ConfigEntry<bool> storeFromHotbar;
         public static ConfigEntry<bool> storeFromNets;
         public static ConfigEntry<bool> storeEggs;
+        public static ConfigEntry<bool> storeDropped;
         public static ConfigEntry<string> hotkey;
         public static ConfigEntry<string> disallowedItems;
         public static ConfigEntry<float> range;
@@ -39,6 +41,7 @@ namespace QuickStore
             storeFromHotbar = Config.Bind<bool>("Options", "StoreFromHotbar", false, "Store items from the hotbar");
             storeFromNets = Config.Bind<bool>("Options", "StoreFromNets", true, "Store items caught in net blocks");
             storeEggs = Config.Bind<bool>("Options", "StoreEggs", true, "Store eggs laid by cluckers");
+            storeDropped = Config.Bind<bool>("Options", "StoreDropped", true, "Store items instead of dropping when inventory full");
 			hotkey = Config.Bind<string>("Options", "Hotkey", "k", "Hotkey to trigger quick store");
 			range = Config.Bind<float>("Options", "Range", 10, "Range in metres from storage to allow quick store (-1 is infinite range)");
 			disallowedItems = Config.Bind<string>("Options", "DisallowedItems", "", "List of items that will not be moved (comma-separated)");
@@ -140,85 +143,92 @@ namespace QuickStore
 
                     foreach (var ic in ics)
                     {
-                        if(ic.collectedItems != null)
-                        for (int k = ic.collectedItems.Count - 1; k >= 0; k--)
-                        {
-                            PickupItem_Networked pin = ic.collectedItems[k];
-                            if (pin?.gameObject.activeSelf != true || pin?.PickupItem?.yieldHandler?.Yield?.Count <= 0)
-                                continue;
-                            for (int i = pin.PickupItem.yieldHandler.Yield.Count - 1; i >= 0; i--)
+                        if (ic.collectedItems != null)
+                            for (int k = ic.collectedItems.Count - 1; k >= 0; k--)
                             {
-                                if (pin.PickupItem.yieldHandler.Yield[i]?.item == null)
-                                {
+                                PickupItem_Networked pin = ic.collectedItems[k];
+                                if (pin?.gameObject.activeSelf != true || pin?.PickupItem?.yieldHandler?.Yield?.Count <= 0)
                                     continue;
-                                }
-                                int remain  = pin.PickupItem.yieldHandler.Yield[i].amount;
-                                Dbgl($"Trying to store from net: {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{remain}");
-                                foreach (Storage_Small s in StorageManager.allStorages)
+                                for (int i = pin.PickupItem.yieldHandler.Yield.Count - 1; i >= 0; i--)
                                 {
-                                    if (s.IsOpen || range.Value >= 0 && Vector3.Distance(ic.transform.position, s.transform.position) > range.Value)
+                                    if (pin.PickupItem.yieldHandler.Yield[i]?.item == null)
+                                    {
                                         continue;
-                                    if (s.GetInventoryReference().GetItemCount(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName) > 0)
+                                    }
+                                    int remain = pin.PickupItem.yieldHandler.Yield[i].amount;
+                                    Dbgl($"Trying to store from net: {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{remain}");
+                                    foreach (Storage_Small s in StorageManager.allStorages)
                                     {
-                                        var newRemain = s.GetInventoryReference().AddItem(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName, remain);
-                                        if(newRemain != remain)
+                                        if (s.IsOpen || range.Value >= 0 && Vector3.Distance(ic.transform.position, s.transform.position) > range.Value)
+                                            continue;
+                                        if (s.GetInventoryReference().GetItemCount(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName) > 0)
                                         {
-                                            ip.ShowItem(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName, remain - newRemain);
-                                            Dbgl($"\tStored {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{remain - newRemain} from collector net, remain: {newRemain}/{pin.PickupItem.yieldHandler.Yield[i].amount}");
-                                            remain = newRemain;
-                                            if (Raft_Network.IsHost)
+                                            var newRemain = s.GetInventoryReference().AddItem(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName, remain);
+                                            if (newRemain != remain)
                                             {
-                                                player.Network.RPC(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
-                                            }
-                                            else
-                                            {
-                                                player.SendP2P(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
-                                            }
+                                                ip.ShowItem(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName, remain - newRemain);
+                                                Dbgl($"\tStored {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{remain - newRemain} from collector net, remain: {newRemain}/{pin.PickupItem.yieldHandler.Yield[i].amount}");
+                                                remain = newRemain;
 
+                                                try
+                                                {
+
+                                                    if (Raft_Network.IsHost)
+                                                    {
+                                                        player.Network.RPC(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                                                    }
+                                                    else
+                                                    {
+                                                        player.SendP2P(new Message_Storage_Close(Messages.StorageManager_Close, player.StorageManager, s), EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                                                    }
+                                                }
+                                                catch { }
+
+
+                                            }
                                         }
                                     }
-                                }
-                                if (remain != pin.PickupItem.yieldHandler.Yield[i].amount)
-                                {
-                                    Collider[] componentsInChildren = pin.GetComponentsInChildren<Collider>();
-                                    if (componentsInChildren != null)
+                                    if (remain != pin.PickupItem.yieldHandler.Yield[i].amount)
                                     {
-                                        foreach (Collider collider in componentsInChildren)
+                                        Collider[] componentsInChildren = pin.GetComponentsInChildren<Collider>();
+                                        if (componentsInChildren != null)
                                         {
-                                            if (!(collider == null))
+                                            foreach (Collider collider in componentsInChildren)
                                             {
-                                                collider.enabled = true;
+                                                if (!(collider == null))
+                                                {
+                                                    collider.enabled = true;
+                                                }
                                             }
                                         }
-                                    }
-                                    WaterFloatSemih2 component = pin.GetComponent<WaterFloatSemih2>();
-                                    if (component != null)
-                                    {
-                                        component.enabled = true;
-                                    }
-                                    if (remain != 0)
-                                    {
-                                        Dbgl($"\tSending {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{remain} left over to player inventory");
+                                        WaterFloatSemih2 component = pin.GetComponent<WaterFloatSemih2>();
+                                        if (component != null)
+                                        {
+                                            component.enabled = true;
+                                        }
+                                        if (remain != 0)
+                                        {
+                                            Dbgl($"\tSending {pin.PickupItem.yieldHandler.Yield[i].item.UniqueName} x{remain} left over to player inventory");
 
-                                        pi.AddItem(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName, remain);
+                                            pi.AddItem(pin.PickupItem.yieldHandler.Yield[i].item.UniqueName, remain);
+                                        }
+                                        PickupObjectManager.RemovePickupItem(pin);
+                                        ic.collectedItems?.RemoveAt(k);
+                                        break;
                                     }
-                                    PickupObjectManager.RemovePickupItem(pin);
-                                    ic.collectedItems.RemoveAt(k);
-                                    break;
-                                }
-                                else
-                                {
-                                    Dbgl($"\tall remain, skipping");
-                                }
+                                    else
+                                    {
+                                        Dbgl($"\tall remain, skipping");
+                                    }
 
+                                }
                             }
-                        }
                     }
                 }
                 if (storeEggs.Value)
                 {
                     var pns = SingletonGeneric<GameManager>.Singleton?.lockedPivot?.gameObject?.GetComponentsInChildren<PickupItem_Networked>();
-                    if(pns != null)
+                    if (pns != null)
                     {
 
                         for (int i = 0; i < pns.Length; i++)
@@ -316,5 +326,93 @@ namespace QuickStore
                 return codes.AsEnumerable();
             }
         }
+        [HarmonyPatch(typeof(PlayerInventory), nameof(PlayerInventory.DropItem), new Type[] { typeof(ItemInstance) })]
+        public static class PlayerInventory_DropItem_Patch1
+        {
+            public static bool Prefix(PlayerInventory __instance, ref ItemInstance instance)
+            {
+
+                if (!modEnabled.Value || !storeDropped.Value)
+                    return true;
+                int original = instance.Amount;
+                int remain = instance.Amount;
+                InventoryPickup ip = AccessTools.FieldRefAccess<PlayerInventory, InventoryPickup>(__instance, "inventoryPickup");
+                foreach (Storage_Small s in StorageManager.allStorages)
+                {
+                    if (s.IsOpen || range.Value >= 0 && Vector3.Distance(__instance.transform.position, s.transform.position) > range.Value)
+                        continue;
+                    if (s.GetInventoryReference().GetItemCount(instance.UniqueName) > 0)
+                    {
+                        s.GetInventoryReference().AddItem(instance, false);
+                        var newRemain = instance.Amount;
+                        if (newRemain != remain)
+                        {
+                            ip.ShowItem(instance.UniqueName, remain - newRemain);
+                            Dbgl($"\tStored {instance.UniqueName} x{remain - newRemain} from dropped items, remain: {newRemain}/{original}");
+                            remain = newRemain;
+                            if (Raft_Network.IsHost)
+                            {
+                                __instance.hotbar.playerNetwork.Network.RPC(new Message_Storage_Close(Messages.StorageManager_Close, __instance.hotbar.playerNetwork.StorageManager, s), Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                            }
+                            else
+                            {
+                                __instance.hotbar.playerNetwork.SendP2P(new Message_Storage_Close(Messages.StorageManager_Close, __instance.hotbar.playerNetwork.StorageManager, s), EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                            }
+                            if (remain <= 0)
+                                return false;
+                        }
+                        else
+                        {
+                            Dbgl($"\tall remain, skipping");
+                        }
+                    }
+                }
+                return true;
+            }
+        }
+        [HarmonyPatch(typeof(PlayerInventory), nameof(PlayerInventory.DropItem), new Type[] { typeof(Item_Base), typeof(int)})]
+        public static class PlayerInventory_DropItem_Patch2
+        {
+            public static bool Prefix(PlayerInventory __instance, Item_Base item, ref int amount)
+            {
+
+                if (!modEnabled.Value || !storeDropped.Value)
+                    return true;
+                int original = amount;
+                int remain = amount;
+                InventoryPickup ip = AccessTools.FieldRefAccess<PlayerInventory, InventoryPickup>(__instance, "inventoryPickup");
+                foreach (Storage_Small s in StorageManager.allStorages)
+                {
+                    if (s.IsOpen || range.Value >= 0 && Vector3.Distance(__instance.transform.position, s.transform.position) > range.Value)
+                        continue;
+                    if (s.GetInventoryReference().GetItemCount(item.UniqueName) > 0)
+                    {
+                        int newRemain = s.GetInventoryReference().AddItem(item.UniqueName, remain);
+                        if (newRemain != remain)
+                        {
+                            ip.ShowItem(item.UniqueName, remain - newRemain);
+                            Dbgl($"\tStored {item.UniqueName} x{remain - newRemain} from dropped items, remain: {newRemain}/{original}");
+                            remain = newRemain;
+                            if (Raft_Network.IsHost)
+                            {
+                                __instance.hotbar.playerNetwork.Network.RPC(new Message_Storage_Close(Messages.StorageManager_Close, __instance.hotbar.playerNetwork.StorageManager, s), Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                            }
+                            else
+                            {
+                                __instance.hotbar.playerNetwork.SendP2P(new Message_Storage_Close(Messages.StorageManager_Close, __instance.hotbar.playerNetwork.StorageManager, s), EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                            }
+                            if (remain <= 0)
+                                return false;
+                        }
+                        else
+                        {
+                            Dbgl($"\tall remain, skipping");
+                        }
+                    }
+                }
+                return true;
+            }
+        }
+
     }
 }

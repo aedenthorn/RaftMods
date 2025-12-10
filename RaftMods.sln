@@ -75,6 +75,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlockShift", "BlockShift\Bl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RepairItems", "RepairItems\RepairItems.csproj", "{FBD3B12B-35E0-0FAD-8403-2D165BD9A775}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomRecipes", "CustomRecipes\CustomRecipes.csproj", "{8DE15023-F6BA-A305-F1B9-4D99F63A788D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -225,6 +227,10 @@ Global
 		{FBD3B12B-35E0-0FAD-8403-2D165BD9A775}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FBD3B12B-35E0-0FAD-8403-2D165BD9A775}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FBD3B12B-35E0-0FAD-8403-2D165BD9A775}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8DE15023-F6BA-A305-F1B9-4D99F63A788D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DE15023-F6BA-A305-F1B9-4D99F63A788D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DE15023-F6BA-A305-F1B9-4D99F63A788D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DE15023-F6BA-A305-F1B9-4D99F63A788D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
