@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace CraftFromContainers
 {
-    [BepInPlugin("aedenthorn.CraftFromContainers", "Craft From Containers", "0.4.2")]
+    [BepInPlugin("aedenthorn.CraftFromContainers", "Craft From Containers", "0.4.3")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -472,7 +472,7 @@ namespace CraftFromContainers
                     if (amount > 0)
                     {
                         var remove = Math.Min(amount, usesToRemove);
-                        s.GetInventoryReference().RemoveItem(uniqueItemName, remove);
+                        s.GetInventoryReference().RemoveItemUses(uniqueItemName, remove);
 
                         usesToRemove -= remove;
                         if (usesToRemove <= 0)

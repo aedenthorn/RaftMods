@@ -1,11 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
-using FMODUnity;
 using HarmonyLib;
-using System.Collections.Generic;
 using System.Reflection;
-using UltimateWater;
-using UnityEngine;
 
 namespace InstantGather
 {
@@ -18,10 +14,10 @@ namespace InstantGather
         public static ConfigEntry<bool> isDebug;
         public static ConfigEntry<float> gatherTime;
 
-        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = false)
+        public static void Dbgl(object obj, BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug)
         {
             if (isDebug.Value)
-                context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
+                context.Logger.Log(level, obj);
         }
         public void Awake()
         {

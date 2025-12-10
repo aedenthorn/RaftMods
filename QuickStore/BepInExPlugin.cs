@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace QuickStore
 {
-    [BepInPlugin("aedenthorn.QuickStore", "Quick Store", "0.3.1")]
+    [BepInPlugin("aedenthorn.QuickStore", "Quick Store", "0.3.2")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -140,14 +140,15 @@ namespace QuickStore
 
                     foreach (var ic in ics)
                     {
+                        if(ic.collectedItems != null)
                         for (int k = ic.collectedItems.Count - 1; k >= 0; k--)
                         {
                             PickupItem_Networked pin = ic.collectedItems[k];
-                            if (pin?.gameObject.activeSelf != true || pin?.PickupItem?.yieldHandler?.Yield == null || pin.PickupItem.yieldHandler.Yield.Count == 0)
+                            if (pin?.gameObject.activeSelf != true || pin?.PickupItem?.yieldHandler?.Yield?.Count <= 0)
                                 continue;
                             for (int i = pin.PickupItem.yieldHandler.Yield.Count - 1; i >= 0; i--)
                             {
-                                if (pin.PickupItem.yieldHandler.Yield[i].item == null)
+                                if (pin.PickupItem.yieldHandler.Yield[i]?.item == null)
                                 {
                                     continue;
                                 }

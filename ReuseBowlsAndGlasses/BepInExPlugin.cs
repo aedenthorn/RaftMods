@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace ReuseBowlsAndGlasses
 {
-    [BepInPlugin("aedenthorn.ReuseBowlsAndGlasses", "Reuse Bowls And Glasses", "0.1.1")]
+    [BepInPlugin("aedenthorn.ReuseBowlsAndGlasses", "Reuse Bowls And Glasses", "0.2.1")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -41,9 +41,14 @@ namespace ReuseBowlsAndGlasses
         {
             public static void Prefix(Slot __instance, int amountOfUsesToAdd, ref bool addItemAfterUseToInventory)
             {
-                if (!modEnabled.Value || __instance.IsEmpty || amountOfUsesToAdd > 0 || __instance?.itemInstance?.settings_consumeable?.FoodType != FoodType.Food || (addItemAfterUseToInventory && __instance.itemInstance.settings_consumeable.ItemAfterUse?.item != null))
+                if (!modEnabled.Value || __instance.IsEmpty || amountOfUsesToAdd >= 0 || __instance.itemInstance.Uses > -amountOfUsesToAdd || __instance?.itemInstance?.settings_consumeable?.FoodType != FoodType.Food || (addItemAfterUseToInventory && __instance.itemInstance.settings_consumeable.ItemAfterUse?.item != null))
                 {
                     return;
+                }
+                if (__instance.itemInstance.UniqueName == "Jar_Honey")
+                {
+                    Dbgl("Returning glass");
+                    ComponentManager<Network_Player>.Value.Inventory.AddItem("Glass", 1);
                 }
                 var allRecipes = AccessTools.StaticFieldRefAccess<CookingTable, SO_CookingTable_Recipe[]>("allRecipes");
                 if (allRecipes == null)
