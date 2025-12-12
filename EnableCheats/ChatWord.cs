@@ -428,7 +428,7 @@ namespace EnableCheats
     }
     public class ChatWord
     {
-        public Dictionary<string, ChatWord> chatWords;
+        public Dictionary<string, ChatWord> chatWords = new Dictionary<string, ChatWord>();
 
     }
 }

@@ -1,7 +1,6 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -10,7 +9,7 @@ using UnityEngine.UI;
 
 namespace AutoRecipe
 {
-    [BepInPlugin("aedenthorn.AutoRecipe", "Auto Recipe", "0.1.1")]
+    [BepInPlugin("aedenthorn.AutoRecipe", "Auto Recipe", "0.2.1")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -90,20 +89,38 @@ namespace AutoRecipe
 
                 if (MyInput.GetButtonDown("Interact"))
                 {
-                    CookingTable station = null;
+                    List<CookingTable> stations = new List<CookingTable>();
+                    CookingTable[] pots;
                     if (recipe.Recipe.RecipeType == CookingRecipeType.CookingPot)
                     {
-                        station = FindObjectOfType<CookingTable_Pot>();
+                        pots = FindObjectsOfType<CookingTable_Pot>();
                     }
-                    else if (recipe.Recipe.RecipeType == CookingRecipeType.Juicer)
+                    else
                     {
-                        station = FindObjectOfType<CookingTable_Juicer>();
+                        pots = FindObjectsOfType<CookingTable_Juicer>();
+
                     }
-                    if (station == null)
+                    foreach (var pot in pots)
+                    {
+                        if (pot.CurrentRecipe != null || pot.Portions != 0U)
+                            goto next;
+                        foreach (var slot in pot.Slots)
+                        {
+                            if (slot.HasItem)
+                                goto next;
+                        }
+                        stations.Add(pot);
+                    next:
+                        continue;
+                    }
+                    if (!stations.Any())
                     {
                         Dbgl($"No {recipe.Recipe.RecipeType} found");
                         return;
                     }
+                    stations.Sort( (a, b) => Vector3.Distance(a.transform.position, recipe.transform.position).CompareTo(Vector3.Distance(b.transform.position, recipe.transform.position)));
+                    var station = stations[0];
+
                     PlayerInventory pi = ComponentManager<Network_Player>.Value.Inventory;
                     var sprite = AccessTools.FieldRefAccess<CookingTable_Recipe_UI, Image>(recipe, "recipeImage").sprite;
                     foreach (var cm in recipe.Recipe.RecipeCost)
@@ -113,14 +130,6 @@ namespace AutoRecipe
                             (ComponentManager<NotificationManager>.Value.ShowNotification("QuestItem") as Notification_QuestItem).infoQue.Enqueue(new Notification_QuestItem_Info($"Not enough {string.Join("/", cm.items.Select(i => i.UniqueName))}", cm.amount, sprite));
 
                             Dbgl($"Not enough {string.Join("/", cm.items.Select(i => i.UniqueName))}");
-                            return;
-                        }
-                    }
-                    foreach (var slot in station.Slots)
-                    {
-                        if (slot.HasItem)
-                        {
-                            Dbgl($"Slot has {slot.CurrentItem.UniqueName}, aborting");
                             return;
                         }
                     }

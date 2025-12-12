@@ -12,7 +12,7 @@ using UnityEngine.UI;
 
 namespace EnableCheats
 {
-    [BepInPlugin("aedenthorn.EnableCheats", "Enable Cheats", "0.3.0")]
+    [BepInPlugin("aedenthorn.EnableCheats", "Enable Cheats", "0.3.1")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;

@@ -77,6 +77,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RepairItems", "RepairItems\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomRecipes", "CustomRecipes\CustomRecipes.csproj", "{8DE15023-F6BA-A305-F1B9-4D99F63A788D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MorePlants", "MorePlants\MorePlants.csproj", "{10062480-5E13-91C3-EEFF-80047BD3484E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShowRange", "ShowRange\ShowRange.csproj", "{1049DEFE-1916-5674-107E-33553BD983B5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -231,6 +235,14 @@ Global
 		{8DE15023-F6BA-A305-F1B9-4D99F63A788D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8DE15023-F6BA-A305-F1B9-4D99F63A788D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8DE15023-F6BA-A305-F1B9-4D99F63A788D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10062480-5E13-91C3-EEFF-80047BD3484E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10062480-5E13-91C3-EEFF-80047BD3484E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10062480-5E13-91C3-EEFF-80047BD3484E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10062480-5E13-91C3-EEFF-80047BD3484E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1049DEFE-1916-5674-107E-33553BD983B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1049DEFE-1916-5674-107E-33553BD983B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1049DEFE-1916-5674-107E-33553BD983B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1049DEFE-1916-5674-107E-33553BD983B5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

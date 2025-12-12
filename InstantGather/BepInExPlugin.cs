@@ -12,7 +12,9 @@ namespace InstantGather
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
-        public static ConfigEntry<float> gatherTime;
+        public static ConfigEntry<float> hookGatherTime;
+        public static ConfigEntry<float> shovelGatherTime;
+        public static ConfigEntry<float> corpseGatherTime;
 
         public static void Dbgl(object obj, BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug)
         {
@@ -24,7 +26,9 @@ namespace InstantGather
             context = this;
             modEnabled = Config.Bind<bool>("General", "ModEnabled", true, "Enable mod");
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
-			gatherTime = Config.Bind<float>("Options", "GatherTime", 0.0001f, "Gather time");
+			hookGatherTime = Config.Bind<float>("Options", "HookGatherTime", 0.0001f, "Hook gather time");
+            shovelGatherTime = Config.Bind<float>("Options", "ShovelGatherTime", 0.0001f, "Shover gather time");
+            corpseGatherTime = Config.Bind<float>("Options", "CorpseGatherTime", 0.0001f, "Corpse gather time");
 
             if (!modEnabled.Value)
                 return;
@@ -33,13 +37,35 @@ namespace InstantGather
         }
 
 		[HarmonyPatch(typeof(Hook), "Awake")]
-		static class Hook_Awake_Patch
+		public static class Hook_Awake_Patch
         {
-			static void Prefix(Hook __instance, ref float ___gatherTime)
+            public static void Prefix(Hook __instance, ref float ___gatherTime)
 			{
 				if (!modEnabled.Value)
 					return;
-                ___gatherTime = gatherTime.Value;
+                ___gatherTime = hookGatherTime.Value;
+            }
+        }
+
+		[HarmonyPatch(typeof(Shovel), "Start")]
+		public static class Shovel_Start_Patch
+        {
+            public static void Prefix(ref float ___originItemChannelTime)
+			{
+				if (!modEnabled.Value)
+					return;
+                ___originItemChannelTime = shovelGatherTime.Value;
+            }
+        }
+
+		[HarmonyPatch(typeof(PickupChanneling), "Awake")]
+		public static class _Patch
+        {
+            public static void Prefix(ref float ___pickupTime)
+			{
+				if (!modEnabled.Value)
+					return;
+                ___pickupTime = corpseGatherTime.Value;
             }
         }
     }

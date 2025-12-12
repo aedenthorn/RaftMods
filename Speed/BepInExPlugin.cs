@@ -10,16 +10,18 @@ using UnityEngine;
 
 namespace Speed
 {
-    [BepInPlugin("aedenthorn.Speed", "Speed", "0.2.0")]
+    [BepInPlugin("aedenthorn.Speed", "Speed", "0.3.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
 
         public static ConfigEntry<bool> modEnabled;
         public static ConfigEntry<bool> isDebug;
+        public static ConfigEntry<KeyCode> resetHotkey;
         public static ConfigEntry<KeyCode> increaseHotkey;
         public static ConfigEntry<KeyCode> decreaseHotkey;
         public static ConfigEntry<KeyCode> swimModHotkey;
+        public static ConfigEntry<KeyCode> incrementModHotkey;
         public static ConfigEntry<double> swimSpeedMult;
         public static ConfigEntry<double> moveSpeedMult;
 
@@ -35,40 +37,58 @@ namespace Speed
 			isDebug = Config.Bind<bool>("General", "IsDebug", true, "Enable debug");
             moveSpeedMult = Config.Bind<double>("Speeds", "MoveSpeedMult", 1.5, "Move speed multiplier");
 			swimSpeedMult = Config.Bind<double>("Speeds", "SwimSpeedMult", 1.5, "Swim speed multiplier");
+            resetHotkey = Config.Bind<KeyCode>("Options", "ResetHotkey", KeyCode.Backspace, "Hotkey to reset speed.");
             increaseHotkey = Config.Bind<KeyCode>("Options", "IncreaseHotkey", KeyCode.Equals, "Hotkey to increase speed.");
             decreaseHotkey = Config.Bind<KeyCode>("Options", "DecreaseHotkey", KeyCode.Minus, "Hotkey to decrease speed.");
             swimModHotkey = Config.Bind<KeyCode>("Options", "SwimModHotkey", KeyCode.LeftAlt, "Hotkey to hold to modify swim speed.");
+            incrementModHotkey = Config.Bind<KeyCode>("Options", "IncrementModHotkey", KeyCode.LeftShift, "Hotkey to hold to increment by 1 instead of 0.1");
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), Info.Metadata.GUID);
         }
         public void Update()
         {
-            if (!modEnabled.Value || ComponentManager<Raft_Network>.Value.GetLocalPlayer() == null)
+            if (!modEnabled.Value || CanvasHelper.ActiveMenu != MenuType.None | ChatTextFieldController.IsChatWindowSelected || ComponentManager<Raft_Network>.Value.GetLocalPlayer() == null)
                 return;
             if (Input.GetKeyDown(increaseHotkey.Value))
             {
+                double inc = Input.GetKey(incrementModHotkey.Value) ? 1 : 0.1;
                 if (Input.GetKey(swimModHotkey.Value))
                 {
 
-                    swimSpeedMult.Value = Math.Round(swimSpeedMult.Value + 0.1, 1);
+                    swimSpeedMult.Value = Math.Round(swimSpeedMult.Value + inc, 1);
                     Dbgl($"swim mult {swimSpeedMult.Value}");
                 }
                 else
                 {
-                    moveSpeedMult.Value = Math.Round(moveSpeedMult.Value + 0.1, 1);
+                    moveSpeedMult.Value = Math.Round(moveSpeedMult.Value + inc, 1);
                     Dbgl($"move mult {moveSpeedMult.Value}");
                 }
             }
             else if (Input.GetKeyDown(decreaseHotkey.Value))
             {
+                double inc = Input.GetKey(incrementModHotkey.Value) ? 1 : 0.1;
+
                 if (Input.GetKey(swimModHotkey.Value))
                 {
-                    swimSpeedMult.Value = Math.Round(Math.Max(0.1, swimSpeedMult.Value - 0.1),1);
+                    swimSpeedMult.Value = Math.Round(Math.Max(0.1, swimSpeedMult.Value - inc), 1);
                     Dbgl($"swim mult {swimSpeedMult.Value}");
                 }
                 else
                 {
-                    moveSpeedMult.Value = Math.Round(Math.Max(0.1, moveSpeedMult.Value - 0.1), 1);
+                    moveSpeedMult.Value = Math.Round(Math.Max(0.1, moveSpeedMult.Value - inc), 1);
+                    Dbgl($"move mult {moveSpeedMult.Value}");
+                }
+            }
+            else if (Input.GetKeyDown(resetHotkey.Value))
+            {
+                if (Input.GetKey(swimModHotkey.Value))
+                {
+                    swimSpeedMult.Value = 1;
+                    Dbgl($"swim mult {swimSpeedMult.Value}");
+                }
+                else
+                {
+                    moveSpeedMult.Value = 1;
                     Dbgl($"move mult {moveSpeedMult.Value}");
                 }
             }

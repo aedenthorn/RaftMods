@@ -5,8 +5,8 @@ namespace CustomRecipes
 {
     public class RecipeInfo
     {
-        public int index { get; set; } = -1;
         public CookingRecipeType recipeType;
+        public uint recipeIndex;
         public string result;
         public bool isBuff;
         public uint portions;
@@ -20,9 +20,9 @@ namespace CustomRecipes
         public IEnumerable<string> items;
         public int amount;
 
-        public CostMultiple ToCostMultiple()
+        public CostMultiple ToCostMultiple(List<Item_Base> ___allAvailableItems)
         {
-            var itemList = items.Select(n => ItemManager.GetItemByName(n));
+            var itemList = items.Select(n => ___allAvailableItems.FirstOrDefault((Item_Base i) => i.UniqueName == n));
             return new CostMultiple(itemList.ToArray(), amount);
         }
     }
