@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace QuickStore
 {
-    [BepInPlugin("aedenthorn.QuickStore", "Quick Store", "0.3.2")]
+    [BepInPlugin("aedenthorn.QuickStore", "Quick Store", "0.5.1")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -29,13 +29,16 @@ namespace QuickStore
         public static ConfigEntry<bool> replantGrown;
         public static ConfigEntry<string> hotkey;
         public static ConfigEntry<string> disallowedItems;
+        public static ConfigEntry<string> disallowedTypes;
         public static ConfigEntry<float> range;
         public static bool suppress;
+        public static List<string> disallowedList;
+        public static List<string> disallowedTypeList;
 
-        public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = false)
+        public static void Dbgl(object obj, BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug)
         {
             if (isDebug.Value)
-                context.Logger.Log(level, (pref ? typeof(BepInExPlugin).Namespace + " " : "") + str);
+                context.Logger.Log(level, obj);
         }
         public void Awake()
         {
@@ -53,6 +56,7 @@ namespace QuickStore
 			hotkey = Config.Bind<string>("Options", "Hotkey", "k", "Hotkey to trigger quick store");
 			range = Config.Bind<float>("Options", "Range", 10, "Range in metres from storage to allow quick store (-1 is infinite range)");
 			disallowedItems = Config.Bind<string>("Options", "DisallowedItems", "", "List of items that will not be moved (comma-separated)");
+			disallowedTypes = Config.Bind<string>("Options", "DisallowedTypes", "", $"List of item types that will not be moved (comma-separated). Possible values: {string.Join(",",Enum.GetNames(typeof(CraftingCategory)))}");
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
         }
@@ -63,13 +67,14 @@ namespace QuickStore
             if (AedenthornUtils.CheckKeyDown(hotkey.Value))
             {
                 Dbgl("Quick store");
-                var disallowedList = disallowedItems.Value.Split(',').ToList();
+                disallowedList = disallowedItems.Value.Split(',').ToList();
+                disallowedTypeList = disallowedTypes.Value.Split(',').ToList();
                 var player = ComponentManager<Raft_Network>.Value.GetLocalPlayer();
                 var pi = ComponentManager<PlayerInventory>.Value;
                 InventoryPickup ip = AccessTools.FieldRefAccess<PlayerInventory, InventoryPickup>(pi, "inventoryPickup");
                 foreach (var slot in pi.allSlots)
                 {
-                    if (slot.itemInstance is null || disallowedList.Contains(slot.itemInstance.UniqueName) || (!storeFromHotbar.Value && pi.hotbar.ContainsSlot(slot)))
+                    if (slot.itemInstance is null || disallowedList.Contains(slot.itemInstance.UniqueName) || disallowedTypeList.Contains(slot.itemInstance.settings_recipe?.CraftingCategory.ToString()) || (!storeFromHotbar.Value && pi.hotbar.ContainsSlot(slot)))
                         continue;
                     string slotName = slot.itemInstance.UniqueName;
                     int originalAmount = slot.itemInstance.Amount;
@@ -245,20 +250,28 @@ namespace QuickStore
                             var plant = slot.plant;
                             if (plant == null)
                                 continue;
-                            if (!plant.FullyGrown() || !plant.harvestable || (!plant.playerCanHarvest && !harvestTrees.Value))
+                            var tree = plant.GetComponent<HarvestableTree>();
+                            if (!plant.FullyGrown() || !plant.harvestable || !plant.playerCanHarvest || (tree != null && !harvestTrees.Value))
                                 continue;
+
                             if (beehives.Any() && beehives[0].IsItemBaseFlower(plant.item) && beehives.Exists(b => Vector3.Distance(plot.transform.position, b.transform.position) < b.FlowerFindDistance))
                                 continue;
                             bool replant = false;
-                            if (plant?.pickupComponent.yieldHandler?.Yield?.Any() == true)
+                            bool replantRandom = false;
+                            var yield = plant.pickupComponent?.yieldHandler?.Yield;
+                            if (yield?.Any() == true)
                             {
-                                var yield = plant.pickupComponent.yieldHandler.Yield;
+                                Dbgl($"Got {yield.Count} yields for {plant.item.UniqueName}");
                                 for (int j = 0; j < yield.Count; j++)
                                 {
+
                                     var item = yield[j].item;
                                     int amount = yield[j].amount;
+
+                                    Dbgl($"yield {j} is {item.UniqueName} x{amount}");
+                                    
                                     int remain = amount;
-                                    if (replantGrown.Value && plot.AcceptsPlantType(item) && dict.TryGetValue(item.UniqueName, out var ic))
+                                    if (!replant && replantGrown.Value && plot.AcceptsPlantType(item) && dict.TryGetValue(item.UniqueName, out var ic))
                                     {
                                         PlantComponent pc = ic.obj.GetComponent<PlantComponent>();
                                         if (pc != null)
@@ -270,15 +283,15 @@ namespace QuickStore
                                     }
                                     if (remain > 0)
                                     {
-                                        TryStore(plant.transform.position, item, amount, ref remain);
+                                        TryStore(player.transform.position, item, amount, ref remain);
                                     }
 
-                                    bool replantRandom = false;
 
                                     if (plant.pickupComponent.dropper != null)
                                     {
                                         var asset = AccessTools.FieldRefAccess<RandomDropper, SO_RandomDropper>(plant.pickupComponent.dropper, "randomDropperAsset");
-                                        if(replantGrown.Value && !replant)
+                                        bool replantRandomThis = false;
+                                        if(!replant && !replantRandom && replantGrown.Value)
                                         {
                                             foreach (var i in asset.randomizer.items)
                                             {
@@ -291,12 +304,13 @@ namespace QuickStore
                                                     {
                                                         Dbgl($"Using random seed drop {itemBase.UniqueName} for replant");
                                                         replantRandom = true;
+                                                        replantRandomThis = true;
                                                         break;
                                                     }
                                                 }
                                             }
                                         }
-                                        if (!replantRandom && (remain == 0 || remain + (replant ? 1 : 0) < amount))
+                                        if (!replantRandomThis)
                                         {
                                             Item_Base[] randomItems = plant.pickupComponent.dropper.GetRandomItems();
                                             foreach(var item2 in randomItems)
@@ -316,39 +330,32 @@ namespace QuickStore
                                         }
                                     }
 
-                                    if (remain == 0 || remain + (replant ? 1 : 0) != amount)
+                                    if (remain != 0)
                                     {
-                                        RuntimeManager.PlayOneShot("event:/crafting/plant_harvest", plant.transform.position);
-                                        plant.PullRoots();
-                                        player.PlantManager.SendOnCropplotModified(plot, PlantManager.ObjectModification.PLANTREMOVED);
-                                        if (remain != 0)
-                                        {
-                                            Dbgl($"\tSending {item.UniqueName} x{remain} left over to player inventory");
+                                        Dbgl($"\tSending {item.UniqueName} x{remain} left over to player inventory");
 
-                                            pi.AddItem(item.UniqueName, remain);
-                                        }
-                                        PickupObjectManager.RemovePickupItem(plant.pickupComponent.networkID);
-                                        if (replant || replantRandom)
-                                        {
-                                            Dbgl($"replanting {item.UniqueName}");
-                                            Message_PlantSeed message_PlantSeed = new Message_PlantSeed(Messages.PlantManager_PlantSeed, player.PlantManager, plot, plant, false);
-                                            if (Raft_Network.IsHost)
-                                            {
-                                                message_PlantSeed.plantObjectIndex = SaveAndLoad.GetUniqueObjectIndex();
-                                                message_PlantSeed.waterPlantedSeed = ComponentManager<WeatherManager>.Value.GetCurrentWeatherType() == UniqueWeatherType.Rain;
-                                                player.PlantManager.PlantSeed(plot, plant, message_PlantSeed.plantObjectIndex, message_PlantSeed.waterPlantedSeed, true);
-                                                player.Network.RPC(message_PlantSeed, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
-                                            }
-                                            else
-                                            {
-                                                message_PlantSeed.plantObjectIndex = 0U;
-                                                player.SendP2P(message_PlantSeed, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
-                                            }
-                                        }
+                                        pi.AddItem(item.UniqueName, remain);
+                                    }
+                                }
+
+                                RuntimeManager.PlayOneShot("event:/crafting/plant_harvest", plant.transform.position);
+                                plant.PullRoots();
+                                player.PlantManager.SendOnCropplotModified(plot, PlantManager.ObjectModification.PLANTREMOVED);
+                                PickupObjectManager.RemovePickupItem(plant.pickupComponent.networkID);
+                                if (replant || replantRandom)
+                                {
+                                    Message_PlantSeed message_PlantSeed = new Message_PlantSeed(Messages.PlantManager_PlantSeed, player.PlantManager, plot, plant, false);
+                                    if (Raft_Network.IsHost)
+                                    {
+                                        message_PlantSeed.plantObjectIndex = SaveAndLoad.GetUniqueObjectIndex();
+                                        message_PlantSeed.waterPlantedSeed = ComponentManager<WeatherManager>.Value.GetCurrentWeatherType() == UniqueWeatherType.Rain;
+                                        player.PlantManager.PlantSeed(plot, plant, message_PlantSeed.plantObjectIndex, message_PlantSeed.waterPlantedSeed, true);
+                                        player.Network.RPC(message_PlantSeed, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
                                     }
                                     else
                                     {
-                                        Dbgl($"\tall remain, skipping");
+                                        message_PlantSeed.plantObjectIndex = 0U;
+                                        player.SendP2P(message_PlantSeed, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
                                     }
                                 }
                             }
@@ -401,6 +408,8 @@ namespace QuickStore
 
         private void TryStore(Vector3 position, Item_Base item, int amount, ref int remain)
         {
+            if (disallowedList.Contains(item.UniqueName) || disallowedTypeList.Contains(item.settings_recipe?.CraftingCategory.ToString()))
+                return;
             var player = ComponentManager<Raft_Network>.Value.GetLocalPlayer();
             var pi = ComponentManager<PlayerInventory>.Value;
             InventoryPickup ip = AccessTools.FieldRefAccess<PlayerInventory, InventoryPickup>(pi, "inventoryPickup");

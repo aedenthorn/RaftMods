@@ -81,6 +81,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MorePlants", "MorePlants\Mo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShowRange", "ShowRange\ShowRange.csproj", "{1049DEFE-1916-5674-107E-33553BD983B5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuickRemove", "QuickRemove\QuickRemove.csproj", "{78BA1EFB-37ED-ABB0-2F45-E1F163AA8746}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -243,6 +245,10 @@ Global
 		{1049DEFE-1916-5674-107E-33553BD983B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1049DEFE-1916-5674-107E-33553BD983B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1049DEFE-1916-5674-107E-33553BD983B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{78BA1EFB-37ED-ABB0-2F45-E1F163AA8746}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{78BA1EFB-37ED-ABB0-2F45-E1F163AA8746}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{78BA1EFB-37ED-ABB0-2F45-E1F163AA8746}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{78BA1EFB-37ED-ABB0-2F45-E1F163AA8746}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

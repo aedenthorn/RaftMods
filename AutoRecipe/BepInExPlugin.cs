@@ -9,7 +9,7 @@ using UnityEngine.UI;
 
 namespace AutoRecipe
 {
-    [BepInPlugin("aedenthorn.AutoRecipe", "Auto Recipe", "0.2.1")]
+    [BepInPlugin("aedenthorn.AutoRecipe", "Auto Recipe", "0.2.2")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -125,7 +125,22 @@ namespace AutoRecipe
                     var sprite = AccessTools.FieldRefAccess<CookingTable_Recipe_UI, Image>(recipe, "recipeImage").sprite;
                     foreach (var cm in recipe.Recipe.RecipeCost)
                     {
-                        if (!cm.HasEnoughInInventory(pi))
+                        int most = 0;
+                        Item_Base mostItem = null;
+                        foreach (var item in cm.items)
+                        {
+                            var amount = pi.GetItemCount(item);
+                            foreach (Storage_Small s in GetStorages())
+                            {
+                                amount += s.GetInventoryReference().GetItemCount(item);
+                            }
+                            if (most < amount)
+                            {
+                                most = amount;
+                                mostItem = item;
+                            }
+                        }
+                        if (cm.amount > most)
                         {
                             (ComponentManager<NotificationManager>.Value.ShowNotification("QuestItem") as Notification_QuestItem).infoQue.Enqueue(new Notification_QuestItem_Info($"Not enough {string.Join("/", cm.items.Select(i => i.UniqueName))}", cm.amount, sprite));
 
