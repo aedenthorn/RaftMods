@@ -1,9 +1,11 @@
 ﻿using BepInEx;
+using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using HarmonyLib;
 using Steamworks;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -63,12 +65,23 @@ namespace EnableCheats
         {
             public static void Postfix(List<Item_Base> ___allAvailableItems)
             {
+                bool customItems = Chainloader.PluginInfos.ContainsKey("aedenthorn.CustomItems");
                 ChatWordLibrary.chatWords["give"].chatWords = new Dictionary<string, ChatWord>();
+                if (customItems)
+                {
+                    ChatWordLibrary.chatWords["dump"].chatWords = new Dictionary<string, ChatWord>();
+                }
+                else
+                {
+                    ChatWordLibrary.chatWords.Remove("dump");
+                }
                 var keys = ___allAvailableItems.Select(i => i.UniqueName).ToList();
                 keys.Sort();
                 foreach (var i in keys)
                 {
                     ChatWordLibrary.chatWords["give"].chatWords[i] = new ChatWord();
+                    if (customItems)
+                        ChatWordLibrary.chatWords["dump"].chatWords[i] = new ChatWord();
                 }
             }
         }
@@ -206,7 +219,6 @@ namespace EnableCheats
                 }
             }
         }
-        
         [HarmonyPatch(typeof(Cheat), nameof(Cheat.AllowCheatsForLocalPlayer))]
         public static class Cheat_AllowCheatsForLocalPlayer_Patch
         {

@@ -7,6 +7,7 @@ namespace EnableCheats
         public static Dictionary<string, ChatWord> chatWords = new Dictionary<string, ChatWord>()
         {
             { "give", new ChatWord() },
+            { "dump", new ChatWord() },
             { "set", new ChatWord() 
                 {
                     chatWords = new Dictionary<string, ChatWord>()
@@ -27,7 +28,8 @@ namespace EnableCheats
                         { "gametime", new ChatWord() },
                         { "gamemode", new ChatWord() },
                         { "bonusthirst", new ChatWord() },
-                        { "fps", new ChatWord() }                    }
+                        { "fps", new ChatWord() }
+                    }
                 }
             },
             { "shift", new ChatWord() },

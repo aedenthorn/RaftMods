@@ -7,11 +7,12 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using UltimateWater;
 using UnityEngine;
 
 namespace CustomRecipes
 {
-    [BepInPlugin("aedenthorn.CustomRecipes", "CustomRecipes", "0.1.0")]
+    [BepInPlugin("aedenthorn.CustomRecipes", "CustomRecipes", "0.2.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -42,120 +43,8 @@ namespace CustomRecipes
                 Dbgl("Reloading recipes");
                 AccessTools.Field(typeof(CookingTable), "allRecipes").SetValue(null, null);
                 AccessTools.Field(typeof(ItemManager), "allAvailableItems").SetValue(null, null);
-                LoadAllItems();
+                ItemManager.GetAllItems();
                 ReloadCookingRecipes();
-            }
-        }
-
-
-        public static void LoadAllItems()
-        {
-            List<Item_Base> ___allAvailableItems = (List<Item_Base>)AccessTools.Field(typeof(ItemManager), "allAvailableItems").GetValue(null);
-
-            if (___allAvailableItems == null || ___allAvailableItems.Count == 0)
-            {
-                ___allAvailableItems = Resources.LoadAll<Item_Base>("IItems").ToList();
-                Dictionary<string, CraftInfo> infos = new Dictionary<string, CraftInfo>();
-                foreach (var item in ___allAvailableItems)
-                {
-                    if (item?.settings_recipe != null)
-                    {
-                        var r = item.settings_recipe;
-                        infos[item.UniqueName] = new CraftInfo()
-                        {
-
-                            craftingCategory = r.CraftingCategory,
-                            subCategory = r.SubCategory,
-                            subCategoryOrder = r.SubCategoryOrder,
-                            baseSkinItem = r.baseSkinItem?.UniqueName,
-                            skins = r.Skins?.Select(i => i.UniqueName).ToArray(),
-
-                            newCostToCraft = r.NewCost?.Select(c => new RecipeCost()
-                            {
-                                items = c.items?.Select(i => i.UniqueName),
-                                amount = c.amount
-                            }).ToArray(),
-
-                            amountToCraft = r.AmountToCraft,
-                            learned = r.Learned,
-                            learnedFromBeginning = r.LearnedFromBeginning,
-                            _hiddenInResearchTable = r.HiddenInResearchTable,
-                            blueprintItem = r.BlueprintItem?.UniqueName,
-                            extraBlueprintItems = r.ExtraBlueprintItems?.Select(i => i.UniqueName).ToArray(),
-                            learnedViaBlueprint = r.LearnedViaBlueprint
-                        };
-                    }
-                }
-                string assetDir = AedenthornUtils.GetAssetPath(context, true);
-                string vanilla = Path.Combine(assetDir, "vanilla_crafting.json");
-                string custom = Path.Combine(assetDir, "custom_crafting.json");
-                if (!File.Exists(vanilla))
-                {
-                    File.WriteAllText(vanilla, JsonSerializer.Serialize(infos, new JsonSerializerOptions { WriteIndented = true, IncludeFields = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull }));
-                }
-                bool changed = false;
-                if (!File.Exists(custom))
-                {
-                    File.WriteAllText(custom, "{}");
-                }
-                else
-                {
-                    Dictionary<string, CraftInfo> customInfos = JsonSerializer.Deserialize<Dictionary<string, CraftInfo>>(File.ReadAllText(custom), new JsonSerializerOptions() { IncludeFields = true });
-                    foreach (var kvp in customInfos)
-                    {
-                        try
-                        {
-                            var r = kvp.Value;
-                            var recipe = new ItemInstance_Recipe(r.craftingCategory, r.learned, r.learnedFromBeginning, r.subCategory, r.subCategoryOrder);
-
-                            if (r.baseSkinItem != null)
-                                AccessTools.Field(typeof(ItemInstance_Recipe), "baseSkinItem").SetValue(recipe, ItemManager.GetItemByName(r.baseSkinItem));
-
-                            if (r.skins != null)
-                                AccessTools.Field(typeof(ItemInstance_Recipe), "skins").SetValue(recipe, r.skins.Select(c => ItemManager.GetItemByName(c)).ToArray());
-
-                            if (r.newCostToCraft != null)
-                                AccessTools.Field(typeof(ItemInstance_Recipe), "newCostToCraft").SetValue(recipe, r.newCostToCraft.Select(c => c.ToCostMultiple(___allAvailableItems)).ToArray());
-
-                            AccessTools.Field(typeof(ItemInstance_Recipe), "amountToCraft").SetValue(recipe, r.amountToCraft);
-
-                            AccessTools.Field(typeof(ItemInstance_Recipe), "_hiddenInResearchTable").SetValue(recipe, r._hiddenInResearchTable);
-
-                            if (r.blueprintItem != null)
-                                AccessTools.Field(typeof(ItemInstance_Recipe), "blueprintItem").SetValue(recipe, ItemManager.GetItemByName(r.blueprintItem));
-
-                            if (r.extraBlueprintItems != null)
-                                AccessTools.Field(typeof(ItemInstance_Recipe), "extraBlueprintItems").SetValue(recipe, r.extraBlueprintItems.Select(c => ItemManager.GetItemByName(c)).ToArray());
-
-                            AccessTools.Field(typeof(ItemInstance_Recipe), "learnedViaBlueprint").SetValue(recipe, r.learnedViaBlueprint);
-                            ___allAvailableItems.Find(i => i.UniqueName == kvp.Key).settings_recipe = recipe;
-                            Dbgl($"Imported crafting recipe for {kvp.Key}");
-                            changed = true;
-                        }
-                        catch (Exception e)
-                        {
-                            Dbgl($"Error importing recipe for {kvp.Key}:\n\n\t" + e.StackTrace, BepInEx.Logging.LogLevel.Warning);
-                        }
-                        
-                    }
-                }
-                AccessTools.Field(typeof(ItemManager), "allAvailableItems").SetValue(null, ___allAvailableItems);
-                if (changed)
-                {
-                    var cm = ComponentManager<CraftingMenu>.Value;
-                    if(cm != null)
-                    {
-                        Dbgl("Resetting crafting menu");
-
-                        AccessTools.Field(typeof(CraftingMenu), "allRecipes").SetValue(cm, new Dictionary<CraftingCategory, List<RecipeItem>>());
-                        AccessTools.Field(typeof(CraftingMenu), "recipeMenuItems").SetValue(cm, new List<RecipeMenuItem>());
-                        while (cm.menuItemSortParent.transform.childCount > 0)
-                        {
-                            DestroyImmediate(cm.menuItemSortParent.transform.GetChild(0).gameObject);
-                        }
-                        AccessTools.Method(typeof(CraftingMenu), "Awake").Invoke(cm, new object[] { });
-                    }
-                }
             }
         }
 
@@ -169,7 +58,6 @@ namespace CustomRecipes
                 ___allRecipes = Resources.LoadAll<SO_CookingTable_Recipe>("SO_CookingRecipes");
                 string assetDir = AedenthornUtils.GetAssetPath(context, true);
                 string vanilla = Path.Combine(assetDir, "vanilla_cooking.json");
-                string custom = Path.Combine(assetDir, "custom_cooking.json");
                 if (!File.Exists(vanilla))
                 {
                     List<RecipeInfo> infos = new List<RecipeInfo>();
@@ -179,7 +67,7 @@ namespace CustomRecipes
                         infos.Add(new RecipeInfo()
                         {
                             recipeType = r.RecipeType,
-                            recipeIndex = r.RecipeIndex,
+                            recipeIndex = (int)r.RecipeIndex,
                             result = r.Result.UniqueName,
                             isBuff = r.IsBuff,
                             portions = r.Portions,
@@ -193,53 +81,84 @@ namespace CustomRecipes
                     }
                     File.WriteAllText(vanilla, JsonSerializer.Serialize(infos, new JsonSerializerOptions { WriteIndented = true, IncludeFields = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull }));
                 }
-                if (!File.Exists(custom))
+                List<uint> indexes = ___allRecipes.Select(r => r.RecipeIndex).ToList();
+                foreach (var custom in Directory.GetFiles(assetDir, "custom_cooking*.json", SearchOption.AllDirectories))
                 {
-                    File.WriteAllText(custom, "[]");
-                }
-                else
-                {
-                    List<RecipeInfo> customInfos = JsonSerializer.Deserialize<List<RecipeInfo>>(File.ReadAllText(custom), new JsonSerializerOptions() { IncludeFields = true });
-                    foreach (var r in customInfos)
+
+                    try
                     {
-                        try
+                        List<RecipeInfo> customInfos = JsonSerializer.Deserialize<List<RecipeInfo>>(File.ReadAllText(custom), new JsonSerializerOptions() { IncludeFields = true });
+
+                        foreach (var r in customInfos)
                         {
-                            var recipe = (SO_CookingTable_Recipe)ScriptableObject.CreateInstance(typeof(SO_CookingTable_Recipe)); ;
-                            foreach (var f in r.GetType().GetFields())
+                            try
                             {
-                                if (f.Name == "recipeCost")
+                                var recipe = (SO_CookingTable_Recipe)ScriptableObject.CreateInstance(typeof(SO_CookingTable_Recipe));
+                                foreach (var f in r.GetType().GetFields())
                                 {
-                                    var costList = (IEnumerable<RecipeCost>)f.GetValue(r);
-                                    AccessTools.Field(typeof(SO_CookingTable_Recipe), f.Name)?.SetValue(recipe, costList.Select(c => c.ToCostMultiple((List<Item_Base>)AccessTools.Field(typeof(ItemManager), "allAvailableItems").GetValue(null))).ToArray());
+                                    if (f.Name == "recipeCost")
+                                    {
+                                        var costList = (IEnumerable<RecipeCost>)f.GetValue(r);
+                                        AccessTools.Field(typeof(SO_CookingTable_Recipe), f.Name)?.SetValue(recipe, costList.Select(c => c.ToCostMultiple((List<Item_Base>)AccessTools.Field(typeof(ItemManager), "allAvailableItems").GetValue(null))).ToArray());
+                                    }
+                                    else if (f.Name == "result")
+                                    {
+                                        AccessTools.Field(typeof(SO_CookingTable_Recipe), f.Name)?.SetValue(recipe, ItemManager.GetItemByName(r.result));
+                                    }
+                                    else if (f.Name == "recipeIndex")
+                                    {
+                                        int idx = (int)f.GetValue(r);
+                                        if (idx < 0)
+                                        {
+                                            uint newIndex = 0;
+                                            while (true)
+                                            {
+                                                if (!indexes.Contains(newIndex))
+                                                {
+                                                    indexes.Add(newIndex);
+                                                    idx = (int)newIndex;
+                                                    break;
+                                                }
+                                                newIndex++;
+                                            }
+                                        }
+                                        AccessTools.Field(typeof(SO_CookingTable_Recipe), f.Name)?.SetValue(recipe, (uint)idx);
+
+                                    }
+                                    else
+                                    {
+                                        AccessTools.Field(typeof(SO_CookingTable_Recipe), f.Name)?.SetValue(recipe, f.GetValue(r));
+                                    }
                                 }
-                                else if (f.Name == "result")
+                                Dbgl($"New recipe for {recipe.Result.UniqueName}; valid {recipe.IsValid}, type {recipe.RecipeType}, cost: {recipe.RecipeCost.Select(m => m.items.Select(i => i?.UniqueName).Join(null, "/") + $" x{m.amount}").Join(null, ", ")}");
+                                int index = ___allRecipes.ToList().FindIndex(cr => cr.RecipeIndex == r.recipeIndex);
+                                if (index >= 0)
                                 {
-                                    AccessTools.Field(typeof(SO_CookingTable_Recipe), f.Name)?.SetValue(recipe, ItemManager.GetItemByName(r.result));
+                                    recipe.name = ___allRecipes[index].name;
+                                    ___allRecipes[index] = recipe;
+                                    Dbgl($"Changed existing recipe {recipe.RecipeIndex}");
                                 }
                                 else
                                 {
-                                    AccessTools.Field(typeof(SO_CookingTable_Recipe), f.Name)?.SetValue(recipe, f.GetValue(r));
+                                    recipe.name = $"SO_{recipe.RecipeIndex}_{recipe.Result.UniqueName}";
+                                    ___allRecipes = ___allRecipes.Append(recipe).ToArray();
+                                    Dbgl($"Added new recipe {recipe.RecipeIndex}");
                                 }
                             }
-                            int index = ___allRecipes.ToList().FindIndex(cr => cr.RecipeIndex == r.recipeIndex);
-                            if (index >= 0)
+                            catch (Exception e)
                             {
-                                ___allRecipes[index] = recipe;
-                                Dbgl($"Changed recipe for {recipe.Result.UniqueName}, {recipe.RecipeIndex}");
+                                Dbgl($"Error importing recipe {r.recipeIndex} for {r.result}:\n\n\t" + e.StackTrace, BepInEx.Logging.LogLevel.Warning);
                             }
-                            else
-                            {
-                                ___allRecipes.Append(recipe);
-                                Dbgl($"Added recipe for {recipe.Result.UniqueName}, {recipe.RecipeIndex}");
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            Dbgl($"Error importing recipe {r.recipeIndex} for {r.result}:\n\n\t" + e.StackTrace, BepInEx.Logging.LogLevel.Warning);
-                        }
 
+                        }
+                    }
+
+                    catch (Exception e)
+                    {
+                        Dbgl($"Error importing file {custom}:\n\n\t" + e.StackTrace, BepInEx.Logging.LogLevel.Warning);
                     }
                 }
+                Dbgl($"total recipes now {___allRecipes.Length}");
                 AccessTools.Field(typeof(CookingTable), "allRecipes").SetValue(null, ___allRecipes);
             }
         }
@@ -256,18 +175,160 @@ namespace CustomRecipes
             }
         }
 
+        [HarmonyPatch(typeof(CookingTable), "OnSlotInsertItem")]
+        public static class CookingTable_OnSlotInsertItem_Patch
+        {
+            public static void Postfix(CookingTable __instance, SO_CookingTable_Recipe[] ___allRecipes)
+            {
+                if (!modEnabled.Value)
+                    return;
+                CheckIngredients(__instance, ___allRecipes);
+            }
+        }
+
+        [HarmonyPatch(typeof(CookingTable), "OnSlotPickupItem")]
+        public static class CookingTable_OnSlotPickupItem_Patch
+        {
+            public static void Postfix(CookingTable __instance, SO_CookingTable_Recipe[] ___allRecipes)
+            {
+                if (!modEnabled.Value)
+                    return;
+                CheckIngredients(__instance, ___allRecipes);
+            }
+        }
+
+        public static void CheckIngredients(CookingTable instance, SO_CookingTable_Recipe[] allRecipes)
+        {
+            var list = instance.Slots.Where(s => s.HasItem);
+            Dbgl($"Current ingredients: {list.Select(s => s.CurrentItem.baseItem.UniqueName).Join(null, ", ")}, {allRecipes.Length} recipes");
+            foreach (SO_CookingTable_Recipe r in allRecipes)
+            {
+                Dbgl($"Checking recipe for {r.Result.UniqueName}");
+                if (r.DoesIngredientsCompleteRecipe(list.Select(s => s.CurrentItem.baseItem).ToArray()))
+                {
+                    Dbgl($"\tRecipe fulfilled; valid {r.IsValid}, type {r.RecipeType == instance.cookingType}");
+                }
+            }
+        }
+
         [HarmonyPatch(typeof(ItemManager), "LoadAllItems")]
         public static class ItemManager_LoadAllItems_Patch
         {
-            public static bool Prefix()
+            public static void Prefix(ref bool __state, List<Item_Base> ___allAvailableItems)
             {
-                if(!modEnabled.Value) 
-                    return true;
-                LoadAllItems();
-                ReloadCookingRecipes();
-                return false;
+                if(modEnabled.Value && (___allAvailableItems == null || ___allAvailableItems.Count == 0))
+                    __state = true;
             }
+            public static void Postfix(bool __state, List<Item_Base> ___allAvailableItems)
+            {
+                if(!__state) 
+                    return;
+                Dbgl($"adding recipes to loaded items");
 
+                string assetDir = AedenthornUtils.GetAssetPath(context, true);
+                string vanilla = Path.Combine(assetDir, "vanilla_crafting.json");
+                if (!File.Exists(vanilla))
+                {
+                    Dictionary<string, CraftInfo> infos = new Dictionary<string, CraftInfo>();
+                    foreach (var item in ___allAvailableItems)
+                    {
+                        if (item?.settings_recipe != null)
+                        {
+                            var r = item.settings_recipe;
+                            infos[item.UniqueName] = new CraftInfo()
+                            {
+
+                                craftingCategory = r.CraftingCategory,
+                                subCategory = r.SubCategory,
+                                subCategoryOrder = r.SubCategoryOrder,
+                                baseSkinItem = r.baseSkinItem?.UniqueName,
+                                skins = r.Skins?.Select(i => i.UniqueName).ToArray(),
+
+                                newCostToCraft = r.NewCost?.Select(c => new RecipeCost()
+                                {
+                                    items = c.items?.Select(i => i.UniqueName),
+                                    amount = c.amount
+                                }).ToArray(),
+
+                                amountToCraft = r.AmountToCraft,
+                                learned = r.Learned,
+                                learnedFromBeginning = r.LearnedFromBeginning,
+                                _hiddenInResearchTable = r.HiddenInResearchTable,
+                                blueprintItem = r.BlueprintItem?.UniqueName,
+                                extraBlueprintItems = r.ExtraBlueprintItems?.Select(i => i.UniqueName).ToArray(),
+                                learnedViaBlueprint = r.LearnedViaBlueprint
+                            };
+                        }
+                    }
+                    File.WriteAllText(vanilla, JsonSerializer.Serialize(infos, new JsonSerializerOptions { WriteIndented = true, IncludeFields = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull }));
+                }
+                bool changed = false;
+                foreach (var custom in Directory.GetFiles(assetDir, "custom_crafting*.json", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        Dictionary<string, CraftInfo> customInfos = JsonSerializer.Deserialize<Dictionary<string, CraftInfo>>(File.ReadAllText(custom), new JsonSerializerOptions() { IncludeFields = true });
+                        foreach (var kvp in customInfos)
+                        {
+                            try
+                            {
+                                var r = kvp.Value;
+                                var recipe = new ItemInstance_Recipe(r.craftingCategory, r.learned, r.learnedFromBeginning, r.subCategory, r.subCategoryOrder);
+
+                                if (r.baseSkinItem != null)
+                                    AccessTools.Field(typeof(ItemInstance_Recipe), "baseSkinItem").SetValue(recipe, ItemManager.GetItemByName(r.baseSkinItem));
+
+                                if (r.skins != null)
+                                    AccessTools.Field(typeof(ItemInstance_Recipe), "skins").SetValue(recipe, r.skins.Select(c => ItemManager.GetItemByName(c)).ToArray());
+
+                                if (r.newCostToCraft != null)
+                                    AccessTools.Field(typeof(ItemInstance_Recipe), "newCostToCraft").SetValue(recipe, r.newCostToCraft.Select(c => c.ToCostMultiple(___allAvailableItems)).ToArray());
+
+                                AccessTools.Field(typeof(ItemInstance_Recipe), "amountToCraft").SetValue(recipe, r.amountToCraft);
+
+                                AccessTools.Field(typeof(ItemInstance_Recipe), "_hiddenInResearchTable").SetValue(recipe, r._hiddenInResearchTable);
+
+                                if (r.blueprintItem != null)
+                                    AccessTools.Field(typeof(ItemInstance_Recipe), "blueprintItem").SetValue(recipe, ItemManager.GetItemByName(r.blueprintItem));
+
+                                if (r.extraBlueprintItems != null)
+                                    AccessTools.Field(typeof(ItemInstance_Recipe), "extraBlueprintItems").SetValue(recipe, r.extraBlueprintItems.Select(c => ItemManager.GetItemByName(c)).ToArray());
+
+                                AccessTools.Field(typeof(ItemInstance_Recipe), "learnedViaBlueprint").SetValue(recipe, r.learnedViaBlueprint);
+                                ___allAvailableItems.Find(i => i.UniqueName == kvp.Key).settings_recipe = recipe;
+                                Dbgl($"Imported crafting recipe for {kvp.Key}");
+                                changed = true;
+                            }
+                            catch (Exception e)
+                            {
+                                Dbgl($"Error importing recipe for {kvp.Key}:\n\n\t" + e.StackTrace, BepInEx.Logging.LogLevel.Warning);
+                            }
+                        }
+
+
+                    }
+                    catch (Exception e)
+                    {
+                        Dbgl($"Error importing file {custom}:\n\n\t" + e.StackTrace, BepInEx.Logging.LogLevel.Warning);
+                    }
+                }
+                if (changed)
+                {
+                    var cm = ComponentManager<CraftingMenu>.Value;
+                    if (cm != null)
+                    {
+                        Dbgl("Resetting crafting menu");
+
+                        AccessTools.Field(typeof(CraftingMenu), "allRecipes").SetValue(cm, new Dictionary<CraftingCategory, List<RecipeItem>>());
+                        AccessTools.Field(typeof(CraftingMenu), "recipeMenuItems").SetValue(cm, new List<RecipeMenuItem>());
+                        while (cm.menuItemSortParent.transform.childCount > 0)
+                        {
+                            DestroyImmediate(cm.menuItemSortParent.transform.GetChild(0).gameObject);
+                        }
+                        AccessTools.Method(typeof(CraftingMenu), "Awake").Invoke(cm, new object[] { });
+                    }
+                }
+            }
         }
     }
 }

@@ -6,7 +6,7 @@ namespace CustomRecipes
     public class RecipeInfo
     {
         public CookingRecipeType recipeType;
-        public uint recipeIndex;
+        public int recipeIndex;
         public string result;
         public bool isBuff;
         public uint portions;

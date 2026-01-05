@@ -71,6 +71,7 @@ namespace QuickStore
                 disallowedTypeList = disallowedTypes.Value.Split(',').ToList();
                 var player = ComponentManager<Raft_Network>.Value.GetLocalPlayer();
                 var pi = ComponentManager<PlayerInventory>.Value;
+                var network = ComponentManager<Raft_Network>.Value;
                 InventoryPickup ip = AccessTools.FieldRefAccess<PlayerInventory, InventoryPickup>(pi, "inventoryPickup");
                 foreach (var slot in pi.allSlots)
                 {
@@ -177,7 +178,6 @@ namespace QuickStore
                                 {
                                     Dbgl($"\tall remain, skipping");
                                 }
-
                             }
                         }
                     }
