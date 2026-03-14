@@ -64,9 +64,14 @@
       <HintPath>$(ManagedDataPath)\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Assembly-CSharp-firstpass">
+    <Reference Include="Steamworks">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(ManagedDataPath)\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>$(ManagedDataPath)\com.rlabrecque.steamworks.net.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="FMOD">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(ManagedDataPath)\FMODUnity.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>

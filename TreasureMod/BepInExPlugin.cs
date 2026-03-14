@@ -11,7 +11,7 @@ using System.Text.Json;
 
 namespace TreasureMod
 {
-    [BepInPlugin("aedenthorn.TreasureMod", "Treasure Mod", "0.1.0")]
+    [BepInPlugin("aedenthorn.TreasureMod", "Treasure Mod", "0.2.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -39,10 +39,10 @@ namespace TreasureMod
 
 
 
-        [HarmonyPatch(typeof(PickupObjectManager), nameof(PickupObjectManager.RemovePickupItem), new Type[] { typeof(PickupItem_Networked), typeof(CSteamID) })]
+        [HarmonyPatch(typeof(PickupObjectManager), nameof(PickupObjectManager.RemovePickupItem), new Type[] { typeof(PickupItem_Networked), typeof(Network_UserId) })]
         public static class PickupObjectManager_RemovePickupItem_Patch
         {
-            public static void Prefix(ref PickupItem_Networked pickupNetwork, CSteamID pickupPlayerID)
+            public static void Prefix(ref PickupItem_Networked pickupNetwork)
             {
                 if (!modEnabled.Value || pickupNetwork == null || (Raft_Network.IsHost && !pickupNetwork.CanBePickedUp()))
                     return;

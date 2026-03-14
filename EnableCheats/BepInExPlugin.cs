@@ -14,7 +14,7 @@ using UnityEngine.UI;
 
 namespace EnableCheats
 {
-    [BepInPlugin("aedenthorn.EnableCheats", "Enable Cheats", "0.3.1")]
+    [BepInPlugin("aedenthorn.EnableCheats", "Enable Cheats", "0.4.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -237,7 +237,7 @@ namespace EnableCheats
         {
             public static bool Prefix(ref bool __result, CSteamID cSteamID)
             {
-                if (!modEnabled.Value || ComponentManager<Network_Player>.Value == null || ComponentManager<Network_Player>.Value.steamID != cSteamID)
+                if (!modEnabled.Value || ComponentManager<Network_Player>.Value == null || ComponentManager<Network_Player>.Value.steamID != cSteamID.m_SteamID)
                     return true;
                 __result = cheatCommandsEnabled.Value;
                 return false;
@@ -247,7 +247,7 @@ namespace EnableCheats
         [HarmonyPatch(typeof(RemoteConfigManager), nameof(RemoteConfigManager.CheckIfUserIsDev))]
 		public static class RemoteConfigManager_CheckIfUserIsDev_Patch
         {
-            public static void Postfix(CSteamID id, ref bool __result)
+            public static void Postfix(Network_UserId id, ref bool __result)
             {
                 if (!modEnabled.Value || __result || ComponentManager<Network_Player>.Value == null || ComponentManager<Network_Player>.Value.steamID != id)
                     return;

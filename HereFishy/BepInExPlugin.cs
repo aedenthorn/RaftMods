@@ -9,11 +9,10 @@ using System.IO;
 using System.Reflection;
 using UltimateWater;
 using UnityEngine;
-using static UnityEngine.GraphicsBuffer;
 
 namespace HereFishy
 {
-    [BepInPlugin("aedenthorn.HereFishy", "Here Fishy", "0.3.0")]
+    [BepInPlugin("aedenthorn.HereFishy", "Here Fishy", "0.4.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -88,10 +87,10 @@ namespace HereFishy
             running = true;
             Dbgl("Starting here fishy");
 
-            RuntimeManager.LowlevelSystem.getMasterChannelGroup(out ChannelGroup channelgroup);
+            RuntimeManager.CoreSystem.getMasterChannelGroup(out ChannelGroup channelgroup);
             channelgroup.getVolume(out float origVolume);
             channelgroup.setVolume(playHereFishy.Value ? 0.5f : 0f);
-            RuntimeManager.LowlevelSystem.playSound(useFemaleSound.Value ? fishySoundFemale : fishySound, channelgroup, false, out var channel);
+            RuntimeManager.CoreSystem.playSound(useFemaleSound.Value ? fishySoundFemale : fishySound, channelgroup, false, out var channel);
             var playing = true;
             while (playing)
             {
@@ -103,7 +102,7 @@ namespace HereFishy
             {
                 var newPoint = oldPoint + cameraTransform.position - playerPoint;
                 ParticleManager.PlaySystem("WaterSplash_Hook", newPoint + Vector3.up * 0.1f, true);
-                RuntimeManager.PlayOneShotSafe("event:/fishing/fish_hooked", newPoint);
+                AccessTools.FieldRefAccess<Bobber, StudioEventEmitter>(rod.bobber, "eventEmitter_FishOnHook").Play();
                 var uic = AccessTools.FieldRefAccess<Network_Player, PlayerItemManager>(player, "playerItemManager").useItemController;
                 GameObject nic = null;
 
@@ -127,7 +126,7 @@ namespace HereFishy
                 if (playWeee.Value)
                 {
                     channelgroup.setVolume(0.5f);
-                    RuntimeManager.LowlevelSystem.playSound(weeSound, channelgroup, false, out channel);
+                    RuntimeManager.CoreSystem.playSound(weeSound, channelgroup, false, out channel);
                 }
                 float fraction = 0;
                 while (fraction < 1)
@@ -168,7 +167,7 @@ namespace HereFishy
             var path = Path.Combine(AedenthornUtils.GetAssetPath(context), "herefishy.wav");
             try
             {
-                if (RuntimeManager.LowlevelSystem.createSound(path, mode, out fishySound) == RESULT.OK)
+                if (RuntimeManager.CoreSystem.createSound(path, mode, out fishySound) == RESULT.OK)
                 {
                     fishySound.getLength(out var fishyLength, TIMEUNIT.MS);
                     Dbgl($"Loaded herefishy sound {fishyLength / 1000f}");
@@ -179,7 +178,7 @@ namespace HereFishy
             try
             {
                 path = Path.Combine(AedenthornUtils.GetAssetPath(context), "herefishy_female.wav");
-                if (RuntimeManager.LowlevelSystem.createSound(path, mode, out fishySoundFemale) == RESULT.OK)
+                if (RuntimeManager.CoreSystem.createSound(path, mode, out fishySoundFemale) == RESULT.OK)
                 {
                     fishySoundFemale.getLength(out var fishyLengthFemale, TIMEUNIT.MS);
                     Dbgl($"Loaded wee sound {fishyLengthFemale / 1000f}");
@@ -190,7 +189,7 @@ namespace HereFishy
             try
             {
                 path = Path.Combine(AedenthornUtils.GetAssetPath(context), "wee.wav");
-                if (RuntimeManager.LowlevelSystem.createSound(path, mode, out weeSound) == RESULT.OK)
+                if (RuntimeManager.CoreSystem.createSound(path, mode, out weeSound) == RESULT.OK)
                 {
                     weeSound.getLength(out var weeLength, TIMEUNIT.MS);
                     Dbgl($"Loaded wee sound {weeLength / 1000f}");

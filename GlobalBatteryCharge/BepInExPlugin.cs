@@ -1,19 +1,14 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
-using Steamworks;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Reflection.Emit;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.UIElements;
 
 namespace GlobalBatteryCharge
 {
-    [BepInPlugin("aedenthorn.GlobalBatteryCharge", "Global Battery Charge", "0.2.1")]
+    [BepInPlugin("aedenthorn.GlobalBatteryCharge", "Global Battery Charge", "0.3.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;

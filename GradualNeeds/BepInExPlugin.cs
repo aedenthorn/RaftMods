@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace GradualNeeds
 {
-    [BepInPlugin("aedenthorn.GradualNeeds", "Gradual Needs", "0.2.2")]
+    [BepInPlugin("aedenthorn.GradualNeeds", "Gradual Needs", "0.3.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -67,7 +67,7 @@ namespace GradualNeeds
                 {
                     if (codes[i].opcode == OpCodes.Call && codes[i].operand is MethodInfo && (MethodInfo)codes[i].operand == AccessTools.Method(typeof(PlayerStats), "PlaySoundOnInterval"))
                     {
-                        Dbgl("replacing method to modify soundIntervall");
+                        Dbgl("replacing method to modify soundInterval");
                         codes[i].operand = AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.PlaySoundOnInterval));
                         codes.RemoveAt(i - 3);
                     }
@@ -76,7 +76,7 @@ namespace GradualNeeds
             }
         }
 
-        public static IEnumerator PlaySoundOnInterval(StudioEventEmitter emitter)
+        public static IEnumerator PlaySoundOnInterval(StudioEventEmitter emitter, HapticEvent hapticEvent)
         {
             for ( ; ; )
             {

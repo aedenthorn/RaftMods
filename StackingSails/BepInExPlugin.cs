@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace StackingSails
 {
-    [BepInPlugin("aedenthorn.StackingSails", "Stacking Sails", "0.3.0")]
+    [BepInPlugin("aedenthorn.StackingSails", "Stacking Sails", "0.4.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
