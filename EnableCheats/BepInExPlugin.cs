@@ -14,7 +14,7 @@ using UnityEngine.UI;
 
 namespace EnableCheats
 {
-    [BepInPlugin("aedenthorn.EnableCheats", "Enable Cheats", "0.4.0")]
+    [BepInPlugin("aedenthorn.EnableCheats", "Enable Cheats", "0.4.1")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -237,9 +237,14 @@ namespace EnableCheats
         {
             public static bool Prefix(ref bool __result, CSteamID cSteamID)
             {
-                if (!modEnabled.Value || ComponentManager<Network_Player>.Value == null || ComponentManager<Network_Player>.Value.steamID != cSteamID.m_SteamID)
+                Dbgl($"checking cheats for {cSteamID.m_SteamID} ({SteamUser.GetSteamID().m_SteamID})");
+
+                if (!modEnabled.Value || SteamUser.GetSteamID() == null || SteamUser.GetSteamID().m_SteamID != cSteamID.m_SteamID)
                     return true;
                 __result = cheatCommandsEnabled.Value;
+
+                Dbgl($"allow cheats {__result}");
+
                 return false;
             }
         }
@@ -249,7 +254,7 @@ namespace EnableCheats
         {
             public static void Postfix(Network_UserId id, ref bool __result)
             {
-                if (!modEnabled.Value || __result || ComponentManager<Network_Player>.Value == null || ComponentManager<Network_Player>.Value.steamID != id)
+                if (!modEnabled.Value || __result || SteamUser.GetSteamID() == null || SteamUser.GetSteamID().m_SteamID != id)
                     return;
                 __result = devEnabled.Value;
             }
