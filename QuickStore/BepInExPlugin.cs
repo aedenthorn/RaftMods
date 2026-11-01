@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace QuickStore
 {
-    [BepInPlugin("aedenthorn.QuickStore", "Quick Store", "0.5.1")]
+    [BepInPlugin("aedenthorn.QuickStore", "Quick Store", "0.5.2")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;

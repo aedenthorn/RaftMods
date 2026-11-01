@@ -7,11 +7,10 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
-using static SO_TradingPost_Buyable;
 
 namespace RapidTankFill
 {
-    [BepInPlugin("aedenthorn.RapidTankFill", "Rapid Tank Fill", "0.2.0")]
+    [BepInPlugin("aedenthorn.RapidTankFill", "Rapid Tank Fill", "0.3.0")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -45,7 +44,7 @@ namespace RapidTankFill
                 var codes = new List<CodeInstruction>(instructions);
                 for (int i = 0; i < codes.Count; i++)
                 {
-                    if (codes[i].opcode == OpCodes.Call && codes[i].operand is MethodInfo && (MethodInfo)codes[i].operand == AccessTools.Method(typeof(MyInput), nameof(MyInput.GetButtonDown)))
+                    if (codes[i].operand is MethodInfo mi && mi == AccessTools.Method(typeof(CustomInputConfig), nameof(CustomInputConfig.WasPressedThisFrame)))
                     {
                         Dbgl("adding method to add repeatedly");
                         codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(BepInExPlugin), nameof(BepInExPlugin.GetKeyHeld))));

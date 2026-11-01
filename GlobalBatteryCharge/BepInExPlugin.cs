@@ -26,6 +26,7 @@ namespace GlobalBatteryCharge
         public static FieldInfo textComponentFi = AccessTools.Field(typeof(DisplayText), "textComponent");
         public static float currentEfficiency;
         public static int batteryCount;
+        public static ModUpdater updater;
 
         public static void Dbgl(string str = "", BepInEx.Logging.LogLevel level = BepInEx.Logging.LogLevel.Debug, bool pref = false)
         {
@@ -48,7 +49,10 @@ namespace GlobalBatteryCharge
             timerEventer.OnTimerReached += new Action(ChargeBatteries);
 
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
-            InvokeRepeating("UpdateEfficiency", 1, 1);
+            updater = new GameObject("GlobalBatteryChargeUpdater").AddComponent<ModUpdater>();
+            updater.InvokeRepeating("UpdateEfficiency", 1, 1);
+            DontDestroyOnLoad(updater);
+            Dbgl("Loaded");
         }
 
         public static void ChargeBatteries()
@@ -60,20 +64,6 @@ namespace GlobalBatteryCharge
                     battery.AddBatteryUsesNetworked(batteryChargesPerTick.Value);
                 }
             }
-        }
-        public void Update()
-        {
-            if (!modEnabled.Value || !proportionateCharge.Value || !Raft_Network.IsHost || ComponentManager<Raft_Network>.Value?.GetLocalPlayer() == null)
-                return;
-            timerEventer.DoUpdate(Time.deltaTime * currentEfficiency, true);
-        }
-
-        public void UpdateEfficiency()
-        {
-            if (!modEnabled.Value || !proportionateCharge.Value || !Raft_Network.IsHost || ComponentManager<Raft_Network>.Value?.GetLocalPlayer() == null)
-                return;
-            GetTotalEfficiency();
-
         }
 
         public static void GetTotalEfficiency()
@@ -90,6 +80,8 @@ namespace GlobalBatteryCharge
                     batteryCount++;
             }
             float load = batteryCount / batteryPerWindturbine.Value;
+            Dbgl($"total power: {currentEfficiency}, total load: {load}");
+
             currentEfficiency = load == 0 ? 0 : currentEfficiency / load;
         }
 
@@ -115,8 +107,9 @@ namespace GlobalBatteryCharge
         {
             public static void Postfix(Battery __instance, CanvasHelper ___canvas)
 			{
-                if (!modEnabled.Value || currentEfficiency == 0)
+                if (!modEnabled.Value)
 					return;
+                Dbgl("currentEfficiency: " + currentEfficiency);
                 timeSinceLastTextUpdate += Time.deltaTime;
                 if(timeSinceLastTextUpdate > 0.5f)
                 {

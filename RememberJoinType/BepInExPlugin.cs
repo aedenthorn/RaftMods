@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace RememberJoinType
 {
-    [BepInPlugin("aedenthorn.RememberJoinType", "Remember Join Type", "0.2.0")]
+    [BepInPlugin("aedenthorn.RememberJoinType", "Remember Join Type", "0.2.1")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -38,14 +38,17 @@ namespace RememberJoinType
             {
                 if (!modEnabled.Value)
                     return;
+                Dbgl("Postfix LoadGameBox.Button_SelectLoad");
                 var path = Path.Combine(AedenthornUtils.GetAssetPath(context, true), $"{SaveAndLoad.WorldToLoad.name}");
                 if (File.Exists(path) && Enum.TryParse<RequestJoinAuthSetting>(File.ReadAllText(path), out RequestJoinAuthSetting setting))
                 {
-                    for(int i = 0; i < ___authSettingDropdown.options.Count; i++)
+                    Dbgl($"Found saved setting {setting} for world {SaveAndLoad.WorldToLoad.name}");
+                    for (int i = 0; i < ___authSettingDropdown.options.Count; i++)
                     {
                         ___authSettingDropdown.value = i;
                         if (__instance.CheckAuthSettingFromDropdown() == setting)
                         {
+                            Dbgl($"Set dropdown to {setting} for world {SaveAndLoad.WorldToLoad.name}");
                             return;
                         }
                     }
@@ -67,6 +70,7 @@ namespace RememberJoinType
                         ___authSettingDropdown.value = i;
                         if (__instance.CheckAuthSettingFromDropdown() == setting)
                         {
+                            Dbgl($"Set dropdown to {setting} for world {SaveAndLoad.WorldToLoad.name}");
                             return;
                         }
                     }
@@ -80,6 +84,7 @@ namespace RememberJoinType
             {
                 if (!modEnabled.Value || SaveAndLoad.CurrentGameFileName == null)
                     return;
+                Dbgl($"Saving setting {joinAuthSetting} for world {SaveAndLoad.CurrentGameFileName}");
                 File.WriteAllText(Path.Combine(AedenthornUtils.GetAssetPath(context, true), SaveAndLoad.CurrentGameFileName), joinAuthSetting.ToString());
             }
         }

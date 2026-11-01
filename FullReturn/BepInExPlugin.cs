@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace FullReturn
 {
-    [BepInPlugin("aedenthorn.FullReturn", "Full Return", "0.1.0")]
+    [BepInPlugin("aedenthorn.FullReturn", "Full Return", "0.1.1")]
     public class BepInExPlugin: BaseUnityPlugin
     {
         public static BepInExPlugin context;
@@ -99,7 +99,7 @@ namespace FullReturn
                 ComponentManager<SoundManager>.Value.PlayBlockBreak(block.transform.position, Block.IsBlockIndexFoundation(block.buildableItem.UniqueIndex) || Block.IsBlockIndexCollectionNet(block.buildableItem.UniqueIndex));
             }
             HashSet<Block> destroyedBlocksFilter = new HashSet<Block>();
-            yield return SingletonGeneric<GameManager>.Singleton.StartCoroutine(BlockCreator.DestroyBlock(block, destroyedBlocksFilter));
+            yield return SingletonGeneric<GameManager>.Singleton.StartCoroutine(BlockCreator.DestroyBlock(block, destroyedBlocksFilter, playerRemovingBlock, updateRaftBounds));
 
             List<Block> list = destroyedBlocksFilter.ToList<Block>();
             Dbgl($"got {list.Count} destroyed blocks");

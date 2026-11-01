@@ -108,7 +108,7 @@ namespace RepairItems
             }
             instance.itemInstance.SetUsesToMax();
             instance.RefreshComponents();
-            RuntimeManager.PlayOneShotSafe("event:/crafting/reinforce", ComponentManager<Raft_Network>.Value.GetLocalPlayer().transform.position);
+            RuntimeManager.PlayOneShot("event:/crafting/reinforce", ComponentManager<Raft_Network>.Value.GetLocalPlayer().transform.position);
         }
         public static void RemoveCostMultiple(PlayerInventory inventory, CostMultiple[] costMultiple, bool manipulateCostAmount = false)
         {
